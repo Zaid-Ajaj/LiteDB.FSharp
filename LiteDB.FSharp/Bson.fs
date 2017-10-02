@@ -1,9 +1,12 @@
 namespace LiteDB.FSharp
 
 open System
+open System.Globalization
+
 open FSharp.Reflection
 open Newtonsoft.Json
 open LiteDB
+
 
 /// Utilities to convert between BSON document and F# types
 module Bson = 
@@ -24,14 +27,23 @@ module Bson =
         doc.Add(key, value)
         doc
 
+    /// Creates a BsonValue from a date
+    let date (time: DateTime) : BsonValue = 
+        let bson = BsonDocument()
+        let universalTime = 
+            if time.Kind = DateTimeKind.Local 
+            then time.ToUniversalTime() 
+            else time
+        let serialized = universalTime.ToString("O", CultureInfo.InvariantCulture)
+        bson.Add("$date", BsonValue(serialized))
+        bson :> BsonValue
     /// Removes an entry (property) from a `BsonDocument` by the key of that property
     let removeEntryByKey (key:string) (doc: BsonDocument) = 
         doc.Remove(key) |> ignore
         doc
 
-    let private fableConverter = Fable.JsonConverter()
+    let private fableConverter = FSharpJsonConverter()
     let private converters : JsonConverter[] = [| fableConverter |]
-
     /// Converts a typed entity (normally an F# record) to a BsonDocument. 
     /// Assuming there exists a field called `Id` or `id` of the record that will be mapped to `_id` in the BsonDocument, otherwise an exception is thrown.
     let serialize<'t> (entity: 't) = 

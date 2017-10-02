@@ -2,7 +2,7 @@
 
 open Expecto
 open Expecto.Logging
-open Tests
+open Tests.Bson
 
 let testConfig =  
     { Expecto.Tests.defaultConfig with 
@@ -10,4 +10,4 @@ let testConfig =
          verbosity = LogLevel.Debug }
 
 [<EntryPoint>]
-let main argv = runTests testConfig liteDbTests
+let main argv = runTests testConfig bsonConversions

@@ -1,4 +1,4 @@
-module Tests
+module Tests.Bson
 
 open Expecto
 open System
@@ -16,11 +16,14 @@ type RecordWithGenericUnion<'t> = { Id: int; GenericUnion: Maybe<'t> }
 type RecordWithDateTime = { id: int; created: DateTime }
 type RecordWithMap = { id : int; map: Map<string, string> }
 type RecordWithArray = { id: int; arr: int[] }
+type RecordWithDecimal = { id: int; number: decimal }
+type RecordWithLong = { id: int; long: int64 }
+type RecordWithGuid = { id: int; guid: Guid }
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
   
-let liteDbTests =
+let bsonConversions =
   testList "Bson conversions" [
 
     testCase "Fields are mapped correctly with indetifier Id" <| fun _ -> 
@@ -42,6 +45,32 @@ let liteDbTests =
       let doc = Bson.serialize record
       match Bson.deserialize<LowerCaseId> doc with
       | { id = 1; age = 19 } -> pass()
+      | otherwise -> fail()
+
+    testCase "records with decimals" <| fun _ ->
+      let record = { id = 1; number = 20.0M }
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithDecimal> doc with
+      | { id = 1; number = 20.0M } -> pass()
+      | otherwise -> fail()
+
+
+    testCase "records with guid" <| fun _ ->
+      let guidValue = Guid.NewGuid()
+      let record = { id = 1; guid = guidValue }
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithGuid> doc with
+      | { id = 1; guid = value } -> 
+        match value = guidValue with
+        | true -> pass()
+        | false -> fail()
+      | otherwise -> fail()
+
+    testCase "records with long/int64" <| fun _ ->
+      let record = { id = 1; long = 20L }
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithLong> doc with
+      | { id = 1; long = 20L } -> pass()
       | otherwise -> fail()
 
     testCase "record with array" <| fun _ ->
