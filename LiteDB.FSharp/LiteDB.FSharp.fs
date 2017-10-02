@@ -6,7 +6,6 @@ open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 
 module Bson = 
-
     let read key (doc: BsonDocument) =
         doc.[key]
 
@@ -17,7 +16,6 @@ module Bson =
     let remove (key:string) (doc: BsonDocument) = 
         doc.Remove(key) |> ignore
         doc
-    
 
     let private fableConverter = Fable.JsonConverter()
     let private converters : JsonConverter[] = [| fableConverter |]
@@ -30,9 +28,9 @@ module Bson =
         |> Seq.tryFind (fun key -> key = "Id")
         |> function
           | Some key -> 
-              let idValue = read key doc
-              addPair "_id" idValue doc
-              |> remove key
+             doc
+             |> addPair "_id" (read "Id" doc) 
+             |> remove key
           | None -> 
               let error = sprintf "Exected type %s to have a unique identifier property of 'Id' (exact name)" typeName
               failwith error
@@ -40,8 +38,8 @@ module Bson =
     let deserialize<'t>(entity: BsonDocument) = 
         entity
         |> addPair "Id" (read "_id" entity) 
-        |> LiteDB.JsonSerializer.Serialize
-        |> JsonConvert.DeserializeObject<'t>
+        |> LiteDB.JsonSerializer.Serialize // Bson to Json
+        |> fun json -> JsonConvert.DeserializeObject<'t>(json, converters) // Json to 't
 
 
 type FSharpBsonMapper() = 
