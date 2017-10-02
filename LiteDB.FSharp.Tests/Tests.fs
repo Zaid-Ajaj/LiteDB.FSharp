@@ -26,15 +26,15 @@ let liteDbTests =
       let person = { Id = 1; Name = "Mike" }
       let doc = Bson.serialize person
       Expect.equal 2 doc.Keys.Count "Generated BSON document has 2 keys"      
-      Expect.equal (doc.["_id"].AsString) "1" "_id is serialized correctly"
-      Expect.equal (doc.["Name"].AsString) "Mike" "Name property is serialized correctly"
+      Expect.equal (Bson.readInt "_id" doc) 1 "_id property is serialized correctly"
+      Expect.equal (Bson.readStr "Name" doc) "Mike" "Name property is serialized correctly"
 
     testCase "Fields are mapped correctly with indetifier lowercase id" <| fun _ -> 
       let record = { id = 1; age = 19 }
       let doc = Bson.serialize record
       Expect.equal 2 doc.Keys.Count "Generated BSON document has 2 keys"      
-      Expect.equal (doc.["_id"].AsString) "1" "_id is serialized correctly"
-      Expect.equal (doc.["age"].AsString) "19" "age property is serialized correctly"
+      Expect.equal (Bson.readInt "_id" doc) 1 "_id is serialized correctly"
+      Expect.equal (Bson.readInt "age" doc) 19 "age property is serialized correctly"
 
     testCase "simple records with lowercase id" <| fun _ ->
       let record = { id = 1; age = 19 }

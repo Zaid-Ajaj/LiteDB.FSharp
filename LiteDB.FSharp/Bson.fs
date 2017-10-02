@@ -10,6 +10,12 @@ module Bson =
     let read key (doc: BsonDocument) =
         doc.[key]
 
+    let readStr key (doc: BsonDocument) = 
+        doc.[key].AsString
+
+    let readInt key (doc: BsonDocument) = 
+        doc.[key].AsString |> int
+
     let addPair key value (doc: BsonDocument) = 
         doc.Add(key, value)
         doc
