@@ -1,6 +1,7 @@
 namespace LiteDB.FSharp
 
 open System
+open FSharp.Reflection
 open LiteDB
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
@@ -25,19 +26,27 @@ module Bson =
         let json = JsonConvert.SerializeObject(entity, converters)
         let doc = LiteDB.JsonSerializer.Deserialize(json) |> unbox<BsonDocument>
         doc.Keys
-        |> Seq.tryFind (fun key -> key = "Id")
+        |> Seq.tryFind (fun key -> key = "Id" || key = "id")
         |> function
           | Some key -> 
              doc
-             |> addPair "_id" (read "Id" doc) 
+             |> addPair "_id" (read key doc) 
              |> remove key
           | None -> 
               let error = sprintf "Exected type %s to have a unique identifier property of 'Id' (exact name)" typeName
               failwith error
 
     let deserialize<'t>(entity: BsonDocument) = 
+        let typeInfo = typeof<'t>
+        let key = 
+          if FSharpType.IsRecord typeInfo 
+          then FSharpType.GetRecordFields typeInfo 
+               |> Seq.tryFind (fun field -> field.Name = "Id" || field.Name = "id")
+               |> function | Some field -> field.Name
+                           | None -> "Id"
+          else "Id"
         entity
-        |> addPair "Id" (read "_id" entity) 
+        |> addPair key (read "_id" entity) 
         |> remove "_id"
         |> LiteDB.JsonSerializer.Serialize // Bson to Json
         |> fun json -> JsonConvert.DeserializeObject<'t>(json, converters) // Json to 't
