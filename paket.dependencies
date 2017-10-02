@@ -1,0 +1,8 @@
+source https://www.nuget.org/api/v2/
+
+nuget Expecto
+nuget FAKE
+nuget FSharp.Core
+nuget LiteDb
+nuget Newtonsoft.JSON
+nuget Fable.JsonConverter
