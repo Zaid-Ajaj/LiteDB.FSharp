@@ -15,6 +15,8 @@ type Maybe<'a> = Just of 'a | Nothing
 type RecordWithGenericUnion<'t> = { Id: int; GenericUnion: Maybe<'t> }
 type RecordWithDateTime = { id: int; created: DateTime }
 type RecordWithMap = { id : int; map: Map<string, string> }
+type RecordWithArray = { id: int; arr: int[] }
+
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
   
@@ -42,6 +44,12 @@ let liteDbTests =
       | { id = 1; age = 19 } -> pass()
       | otherwise -> fail()
 
+    testCase "record with array" <| fun _ ->
+      let record = { id = 1; arr = [| 1 .. 5 |] }
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithArray> doc with
+      | { id = 1; arr = [| 1;2;3;4;5 |] } -> pass()
+      | otherwise -> fail()
 
     testCase "record with map" <| fun _ -> 
       let map = 
@@ -51,7 +59,7 @@ let liteDbTests =
 
       let record = { id = 1; map = map }
       let doc = Bson.serialize record
-      
+
       match Bson.deserialize<RecordWithMap> doc with
       | { id = 1; map = x } -> 
         match x.["Hello"], x.["Anyone"] with 
