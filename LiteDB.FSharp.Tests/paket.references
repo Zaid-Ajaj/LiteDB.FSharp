@@ -2,4 +2,3 @@ FSharp.Core
 Expecto
 LiteDB
 Newtonsoft.Json
-Fable.JsonConverter

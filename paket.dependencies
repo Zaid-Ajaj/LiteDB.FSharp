@@ -5,4 +5,3 @@ nuget FAKE
 nuget FSharp.Core
 nuget LiteDb
 nuget Newtonsoft.JSON
-nuget Fable.JsonConverter
