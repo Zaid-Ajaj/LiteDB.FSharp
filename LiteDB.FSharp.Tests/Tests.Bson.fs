@@ -115,6 +115,16 @@ let bsonConversions =
           Expect.equal 15 timeCreated.Day "Day is mapped correctly"
       | otherwise -> fail()
 
+
+    testCase "Bson.readDate works" <| fun _ ->
+      let time = DateTime(2017, 10, 15)
+      let record = { id = 1; created = time }
+      let doc = Bson.serialize record
+      let deserialized = Bson.readDate "created" doc
+      Expect.equal time.Year deserialized.Year "Year is correctly read"
+      Expect.equal time.Month deserialized.Month "Month is correctly read"
+      Expect.equal time.Day deserialized.Day "Day is correctly read"
+      
     testCase "records with unions" <| fun _ ->
       let fstRecord = { Id = 1; Union = One }
       let sndRecord = { Id = 2; Union = Two }

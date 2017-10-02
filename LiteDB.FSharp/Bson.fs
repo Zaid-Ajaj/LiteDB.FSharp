@@ -27,7 +27,11 @@ module Bson =
         doc.Add(key, value)
         doc
 
-    /// Creates a BsonValue from a date
+    /// Reads a field from a BsonDocument as DateTime
+    let readDate (key: string) (doc: BsonDocument) = 
+        doc.[key].AsDateTime
+
+    /// Creates a BsonValue from a date, useful when building Query expressions
     let date (time: DateTime) : BsonValue = 
         let bson = BsonDocument()
         let universalTime = 
@@ -37,6 +41,7 @@ module Bson =
         let serialized = universalTime.ToString("O", CultureInfo.InvariantCulture)
         bson.Add("$date", BsonValue(serialized))
         bson :> BsonValue
+
     /// Removes an entry (property) from a `BsonDocument` by the key of that property
     let removeEntryByKey (key:string) (doc: BsonDocument) = 
         doc.Remove(key) |> ignore
