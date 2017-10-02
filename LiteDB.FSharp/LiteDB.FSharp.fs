@@ -38,6 +38,7 @@ module Bson =
     let deserialize<'t>(entity: BsonDocument) = 
         entity
         |> addPair "Id" (read "_id" entity) 
+        |> remove "_id"
         |> LiteDB.JsonSerializer.Serialize // Bson to Json
         |> fun json -> JsonConvert.DeserializeObject<'t>(json, converters) // Json to 't
 
