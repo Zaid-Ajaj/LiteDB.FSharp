@@ -20,7 +20,7 @@ let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
   
 let liteDbTests =
-  testList "Bson (de)serialization" [
+  testList "Bson conversions" [
 
     testCase "Fields are mapped correctly with indetifier Id" <| fun _ -> 
       let person = { Id = 1; Name = "Mike" }
