@@ -7,24 +7,13 @@ open System.IO
 open LiteDB
 open LiteDB.FSharp
 
-type Person = {
-    Id: int
-    Name: string
-}
+type Person = { Id: int; Name: string }
+type SimpleUnion = One | Two
+type RecordWithSimpleUnion = { Id: int; Union: SimpleUnion }
+type RecordWithList = { Id: int; List: int list }
+type Maybe<'a> = Just of 'a | Nothing
+type RecordWithGenericUnion<'t> = { Id: int; GenericUnion: Maybe<'t> }
 
-type SimpleUnion = 
-  | One
-  | Two
-
-type RecordWithSimpleUnion = {
-  Id: int
-  Union: SimpleUnion
-}
-
-type RecordWithList = {
-  Id: int
-  List: int list
-}
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
@@ -66,5 +55,12 @@ let liteDbTests =
         match Seq.sum xs with
         | 55 -> pass()
         | otherwise  -> fail()
+      | otherwise -> fail()
+
+    testCase "Bson serilialize/deserialize works | record with generic union" <| fun _ ->
+      let record = { Id = 1; GenericUnion = Just "kidding"  }
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithGenericUnion<string>> doc with
+      | { Id = 1; GenericUnion = Just "kidding" } -> pass()
       | otherwise -> fail()
   ]
