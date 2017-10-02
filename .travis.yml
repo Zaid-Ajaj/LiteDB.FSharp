@@ -1,0 +1,8 @@
+language: csharp
+mono: none
+dotnet: 2.0.0
+dist: trusty
+script:
+ - .paket/paket.exe restore
+ - cd LiteDB.FSharp.Tests
+ - dotnet run
