@@ -4,8 +4,8 @@ open System
 open FSharp.Reflection
 open LiteDB
 open Newtonsoft.Json
-open Newtonsoft.Json.Linq
 
+/// Utilities to convert between BSON document and F# types
 module Bson = 
     let read key (doc: BsonDocument) =
         doc.[key]
@@ -36,11 +36,11 @@ module Bson =
               let error = sprintf "Exected type %s to have a unique identifier property of 'Id' (exact name)" typeName
               failwith error
 
-    let deserialize<'t>(entity: BsonDocument) = 
-        let typeInfo = typeof<'t>
+    
+    let deserializeByType (entity: BsonDocument) (entityType: Type) = 
         let key = 
-          if FSharpType.IsRecord typeInfo 
-          then FSharpType.GetRecordFields typeInfo 
+          if FSharpType.IsRecord entityType 
+          then FSharpType.GetRecordFields entityType 
                |> Seq.tryFind (fun field -> field.Name = "Id" || field.Name = "id")
                |> function | Some field -> field.Name
                            | None -> "Id"
@@ -49,10 +49,9 @@ module Bson =
         |> addPair key (read "_id" entity) 
         |> remove "_id"
         |> LiteDB.JsonSerializer.Serialize // Bson to Json
-        |> fun json -> JsonConvert.DeserializeObject<'t>(json, converters) // Json to 't
-
-
-type FSharpBsonMapper() = 
-    inherit LiteDB.BsonMapper()
-    override self.ToObject<'t>(entity: BsonDocument) = Bson.deserialize<'t> entity
-    override self.ToDocument<'t>(entity: 't) = Bson.serialize entity
+        |> fun json -> JsonConvert.DeserializeObject(json, entityType, converters) // Json to obj
+    
+    let deserialize<'t>(entity: BsonDocument) = 
+        let typeInfo = typeof<'t>
+        deserializeByType entity typeInfo
+        |> unbox<'t>
