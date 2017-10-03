@@ -156,6 +156,19 @@ let bsonConversions =
         | false -> fail()
       | otherwise -> fail()
 
+    testCase "Binary data is serialized correctly" <| fun _ ->
+      let bytes = Array.map byte [| 1 .. 10 |]
+      let record = {id = 1; data = bytes }
+      let doc = Bson.serialize record
+      // doc = { id: 1, data: { $binary: base64(bytes) } }
+      let dataField = (Bson.read "data" doc).AsDocument
+      let base64 = (Bson.read "$binary" dataField).AsString
+      Convert.FromBase64String(base64)
+      |> fun xs -> 
+           match xs = bytes with  
+           | true -> pass()
+           | false -> fail()
+        
     testCase "deserializing complex union from BsonValue" <| fun _ ->
       let shape = 
         Composite [ 

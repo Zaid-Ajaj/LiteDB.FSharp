@@ -156,6 +156,12 @@ type FSharpJsonConverter() =
                 let dateTime = JObject()
                 dateTime.Add(JProperty("$date", universalTime.ToString("O", CultureInfo.InvariantCulture)))
                 dateTime.WriteTo(writer)
+            | true, Kind.Binary ->
+                let bytes = value |> unbox<byte[]>
+                let base64 = Convert.ToBase64String(bytes)
+                let binaryBsonField = JObject()
+                binaryBsonField.Add(JProperty("$binary", base64))
+                binaryBsonField.WriteTo(writer)
             | true, Kind.Decimal ->
                 let value = (value :?> decimal).ToString()
                 let numberDecimal = JObject()

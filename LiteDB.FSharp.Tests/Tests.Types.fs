@@ -15,6 +15,7 @@ type RecordWithArray = { id: int; arr: int[] }
 type RecordWithDecimal = { id: int; number: decimal }
 type RecordWithLong = { id: int; long: int64 }
 type RecordWithGuid = { id: int; guid: Guid }
+type RecordWithBytes = { id: int; data:byte[] }
 
 type Shape = 
     | Circle of float
