@@ -37,23 +37,16 @@ module Bson =
         doc.[key].AsDateTime
 
     /// Creates a BsonValue from a date, useful when building Query expressions
-    let date (time: DateTime) : BsonValue = 
-        let bson = BsonDocument()
-        let universalTime = 
-            if time.Kind = DateTimeKind.Local 
-            then time.ToUniversalTime() 
-            else time
-        let serialized = universalTime.ToString("O", CultureInfo.InvariantCulture)
-        bson.Add("$date", BsonValue(serialized))
-        bson :> BsonValue
+    let date (time: DateTime) = 
+        BsonValue(time)
 
     /// Removes an entry (property) from a `BsonDocument` by the key of that property
     let removeEntryByKey (key:string) (doc: BsonDocument) = 
         doc.Remove(key) |> ignore
         doc
 
-    let private fableConverter = FSharpJsonConverter()
-    let private converters : JsonConverter[] = [| fableConverter |]
+    let private fsharpJsonConverter = FSharpJsonConverter()
+    let private converters : JsonConverter[] = [| fsharpJsonConverter |]
     /// Converts a typed entity (normally an F# record) to a BsonDocument. 
     /// Assuming there exists a field called `Id` or `id` of the record that will be mapped to `_id` in the BsonDocument, otherwise an exception is thrown.
     let serialize<'t> (entity: 't) = 
