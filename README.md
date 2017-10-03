@@ -16,7 +16,7 @@ open LiteDB.FSharp
 let mapper = FSharpBsonMapper()
 use db = new LiteDatabase("simple.db", mapper)
 ```
-LiteDB.FSharp is made mainly to work with records as representations of the persisted documents. The library *requires* that records have a primary key called `Id` or `id`. This field mapped to `_id` when converted to a bson document for indexing.
+LiteDB.FSharp is made mainly to work with records as representations of the persisted documents. The library *requires* that records have a primary key called `Id` or `id`. This field is then mapped to `_id` when converted to a bson document for indexing.
 
 ```fsharp
 type Album = {
@@ -46,7 +46,8 @@ let result = albums.FindById(id)
 ```
 ### Query many documents depending on the value of a field:
 ```fsharp
-let name = Bson.str "Metallica"
+// Find all albums where Album["Name"] = "Metallica"
+let name = BsonValue("Metallica")
 let query = Query.EQ("Name", name)
 // metallicaAlbums : Seq<Album>
 let metallicaAlbums = albums.Find(query)
@@ -55,9 +56,9 @@ let metallicaAlbums = albums.Find(query)
 ```fsharp
 // find all albums released last year
 let now = DateTime.Now
-let dateFrom = DateTime(now.Year - 1, 01, 01) |> Bson.date
-let dateTo = DateTime(now.Year, 01, 01) |> Bson.date
+let dateFrom = DateTime(now.Year - 1, 01, 01) |> BsonValue
+let dateTo = DateTime(now.Year, 01, 01) |> BsonValue
 let query = Query.Between("DateReleased", dateFrom, dateTo)
-// albumsThisYear : Seq<Album>
-let albumsThisYear = albums.Find(query)
+// albumsLastYear : Seq<Album>
+let albumsLastYear = albums.Find(query)
 ```

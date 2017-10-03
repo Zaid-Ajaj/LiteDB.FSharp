@@ -14,10 +14,6 @@ module Bson =
     /// Returns the value of entry in the BsonDocument by it's key
     let read key (doc: BsonDocument) =
         doc.[key]
-    /// Creates a BsonValue with an integer as content.
-    let fromInt (number: int) = BsonValue(number)
-    /// Creates a BsonValue with a string as content.
-    let str (content: string) = BsonValue(content)
 
     /// Reads a property from a BsonDocument by it's key as a string
     let readStr key (doc: BsonDocument) = 
@@ -35,10 +31,6 @@ module Bson =
     /// Reads a field from a BsonDocument as DateTime
     let readDate (key: string) (doc: BsonDocument) = 
         doc.[key].AsDateTime
-
-    /// Creates a BsonValue from a date, useful when building Query expressions
-    let date (time: DateTime) = 
-        BsonValue(time)
 
     /// Removes an entry (property) from a `BsonDocument` by the key of that property
     let removeEntryByKey (key:string) (doc: BsonDocument) = 

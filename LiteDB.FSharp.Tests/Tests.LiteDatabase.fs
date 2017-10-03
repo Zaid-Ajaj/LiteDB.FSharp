@@ -41,13 +41,13 @@ let liteDatabaseUsage =
                     Expect.equal 15 x.Day "Day is mapped correctly"
                 | otherwise -> fail()
 
-        testCase "Search by Query works" <| fun _ ->
+        testCase "Search by Query.Between integer field works" <| fun _ ->
             useDatabase <| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
                 people.Insert(person) |> ignore
-                let query = Query.And(Query.GT("Age", Bson.fromInt 5), Query.LT("Age", Bson.fromInt 15))
+                let query = Query.And(Query.GT("Age", BsonValue(5)), Query.LT("Age", BsonValue(15)))
                 people.Find(query)
                 |> Seq.length 
                 |> function | 1 -> pass()
@@ -59,18 +59,19 @@ let liteDatabaseUsage =
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
                 people.Insert(person) |> ignore
-                let query = Query.EQ("Name", Bson.str "Mike")
+                let query = Query.EQ("Name", BsonValue("Mike"))
                 people.Find(query)
                 |> Seq.length 
                 |> function | 1 -> pass()
                             | n -> fail()
+
         testCase "Search by Exact Age works" <| fun _ ->
             useDatabase <| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
                 people.Insert(person) |> ignore
-                let query = Query.EQ("Age", Bson.fromInt 10)
+                let query = Query.EQ("Age", BsonValue(10))
                 people.Find(query)
                 |> Seq.length 
                 |> function | 1 -> pass()
@@ -83,8 +84,8 @@ let liteDatabaseUsage =
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
                 people.Insert(person) |> ignore
 
-                let dateFrom = DateTime(2017, 01, 01) |> Bson.date
-                let dateTo = DateTime(2018, 01, 01) |> Bson.date
+                let dateFrom = DateTime(2017, 01, 01) |> BsonValue
+                let dateTo = DateTime(2018, 01, 01) |> BsonValue
                 let query = Query.And(Query.GT("DateAdded", dateFrom), Query.LT("DateAdded", dateTo))
                 people.Find(query)
                 |> Seq.length 
@@ -98,8 +99,8 @@ let liteDatabaseUsage =
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
                 people.Insert(person) |> ignore
 
-                let dateFrom = DateTime(2017, 01, 01) |> Bson.date
-                let dateTo = DateTime(2018, 01, 01) |> Bson.date
+                let dateFrom = DateTime(2017, 01, 01) |> BsonValue
+                let dateTo = DateTime(2018, 01, 01) |> BsonValue
                 let query = Query.Between("DateAdded", dateFrom, dateTo)
                 people.Find(query)
                 |> Seq.length 
