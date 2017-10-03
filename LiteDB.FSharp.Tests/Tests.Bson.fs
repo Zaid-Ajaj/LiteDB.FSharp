@@ -161,14 +161,21 @@ let bsonConversions =
       let record = {id = 1; data = bytes }
       let doc = Bson.serialize record
       // doc = { id: 1, data: { $binary: base64(bytes) } }
-      let dataField = (Bson.read "data" doc).AsDocument
-      let base64 = (Bson.read "$binary" dataField).AsString
-      Convert.FromBase64String(base64)
+      Bson.read "data" doc
+      |> fun value -> value.AsBinary
       |> fun xs -> 
            match xs = bytes with  
            | true -> pass()
            | false -> fail()
-        
+
+    testCase "Bson deserialization of binary data works" <| fun _ ->
+      let bytes = [| byte 1; byte 2 |]
+      let record = {id = 1; data = bytes }
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithBytes> doc with
+      | { id = 1; data = xs } when xs = bytes -> pass()
+      | otherwise -> fail()
+
     testCase "deserializing complex union from BsonValue" <| fun _ ->
       let shape = 
         Composite [ 

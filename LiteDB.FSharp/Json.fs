@@ -204,6 +204,11 @@ type FSharpJsonConverter() =
             let jsonObject = JObject.Load(reader)
             let value = jsonObject.["$numberDecimal"].Value<string>()
             upcast Decimal.Parse(value)
+        | true, Kind.Binary ->
+            let jsonObject =  JObject.Load(reader)
+            let base64 = jsonObject.["$binary"].Value<string>()
+            let bytes = Convert.FromBase64String(base64)
+            upcast bytes
         | true, Kind.Long ->
             let jsonObject = JObject.Load(reader)
             let value = jsonObject.["$numberLong"].Value<string>()
