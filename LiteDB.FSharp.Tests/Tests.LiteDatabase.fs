@@ -5,6 +5,7 @@ open System
 open System.IO
 open LiteDB
 open LiteDB.FSharp
+open Tests.Types
 
 type MaritalStatus = Single | Married
 
@@ -118,5 +119,28 @@ let liteDatabaseUsage =
                 let foundPerson = people.FindOne(query)
                 match foundPerson with
                 | { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time } -> pass()
-                | otherwise -> fail()                                         
+                | otherwise -> fail()    
+
+        testCase "Full custom search works by BsonValue deserialization" <| fun _ ->
+            useDatabase <| fun db ->
+                let records = db.GetCollection<RecordWithShape> "Shapes"                                     
+                let shape = 
+                    Composite [ 
+                      Circle 2.0;
+                      Composite [ Circle 4.0; Rect(2.0, 5.0) ]
+                    ]
+                let record = { Id = 1; Shape = shape }
+
+                records.Insert(record) |> ignore
+                let searchQuery = 
+                    Query.Where("Shape", fun bsonValue -> 
+                        let shapeValue = Bson.deserializeField<Shape> bsonValue
+                        shapeValue = shape
+                    )
+
+                records.Find(searchQuery)
+                |> Seq.length
+                |> function 
+                    | 1 -> pass()
+                    | n -> fail()
     ]

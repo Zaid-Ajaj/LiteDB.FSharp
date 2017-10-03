@@ -74,3 +74,38 @@ let query = Query.Between("DateReleased", dateFrom, dateTo)
 // albumsLastYear : Seq<Album>
 let albumsLastYear = albums.Find(query)
 ```
+### Finally, example of fully customized search by nested discriminated unions
+```fsharp
+type Shape = 
+    | Circle of float
+    | Rect of float * float
+    | Composite of Shape list
+
+type RecordWithShape = { Id: int; Shape: Shape }
+
+testCase "Full custom search works by BsonValue deserialization" <| fun _ ->
+  useDatabase <| fun db ->
+    let records = db.GetCollection<RecordWithShape> "Shapes"                       
+    let shape = 
+        Composite [ 
+          Circle 2.0;
+          Composite [ Circle 4.0; Rect(2.0, 5.0) ]
+        ]
+   let record = { Id = 1; Shape = shape }
+
+    records.Insert(record) |> ignore
+    let searchQuery = 
+        Query.Where("Shape", fun bsonValue -> 
+            // Bson.derserializa<'t> won't work because that is 
+            // only for documents,
+            // that's why use Bson.deserializeField<'t> because you are filtering BsonValues
+            let shapeValue = Bson.deserializeField<Shape> bsonValue
+            shapeValue = shape
+        )
+
+    records.Find(searchQuery)
+    |> Seq.length
+    |> function 
+        | 1 -> pass() // passed!
+        | n -> fail()
+```

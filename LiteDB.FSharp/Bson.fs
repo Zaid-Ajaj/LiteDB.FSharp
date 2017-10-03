@@ -71,6 +71,15 @@ module Bson =
         |> LiteDB.JsonSerializer.Serialize // Bson to Json
         |> fun json -> JsonConvert.DeserializeObject(json, entityType, converters) // Json to obj
     
+    /// Deserialized a field of a BsonDocument to a typed entity
+    let deserializeField<'t> (value: BsonValue) = 
+        let typeInfo = typeof<'t>
+        value
+        // Bson to Json
+        |> LiteDB.JsonSerializer.Serialize
+        // Json to 't
+        |> fun json -> JsonConvert.DeserializeObject(json, typeInfo, converters)
+        |> unbox<'t>
     /// Converts a BsonDocument to a typed entity given the document the type of the CLR entity.
     let deserialize<'t>(entity: BsonDocument) = 
         let typeInfo = typeof<'t>

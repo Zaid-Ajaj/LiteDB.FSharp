@@ -140,4 +140,33 @@ let bsonConversions =
       match Bson.deserialize<RecordWithGenericUnion<string>> doc with
       | { Id = 1; GenericUnion = Just "kidding" } -> pass()
       | otherwise -> fail()
+
+    testCase "records with complex unions" <| fun _ ->
+      let shape = 
+        Composite [ 
+          Circle 2.0;
+          Composite [ Circle 4.0; Rect(2.0, 5.0) ]
+        ]
+      let record = { Id = 1; Shape = shape }
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithShape> doc with
+      | { Id = 1; Shape = deserialized } ->
+        match deserialized = shape with
+        | true -> pass()
+        | false -> fail()
+      | otherwise -> fail()
+
+    testCase "deserializing complex union from BsonValue" <| fun _ ->
+      let shape = 
+        Composite [ 
+          Circle 2.0;
+          Composite [ Circle 4.0; Rect(2.0, 5.0) ]
+        ]
+      let record = { Id = 1; Shape = shape }
+      let doc = Bson.serialize record
+      let serializedShape = Bson.read "Shape" doc
+      let deserializedShape = Bson.deserializeField<Shape> serializedShape
+      match deserializedShape = shape with
+      | true -> pass()
+      | false -> fail()
   ]

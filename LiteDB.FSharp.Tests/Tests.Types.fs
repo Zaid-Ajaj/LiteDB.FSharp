@@ -15,3 +15,10 @@ type RecordWithArray = { id: int; arr: int[] }
 type RecordWithDecimal = { id: int; number: decimal }
 type RecordWithLong = { id: int; long: int64 }
 type RecordWithGuid = { id: int; guid: Guid }
+
+type Shape = 
+    | Circle of float
+    | Rect of float * float
+    | Composite of Shape list
+
+type RecordWithShape = { Id: int; Shape: Shape }
