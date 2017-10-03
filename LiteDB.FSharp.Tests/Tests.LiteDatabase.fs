@@ -105,5 +105,18 @@ let liteDatabaseUsage =
                 people.Find(query)
                 |> Seq.length 
                 |> function | 1 -> pass()
-                            | n -> fail()                         
+                            | n -> fail()   
+
+        testCase "Search by discriminated unions works" <| fun _ ->
+            useDatabase <| fun db ->
+                let people = db.GetCollection<PersonDocument>("people")
+                let time = DateTime(2017, 10, 15)
+                let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+                people.Insert(person) |> ignore
+
+                let query = Query.EQ("Status", BsonValue("Married"))
+                let foundPerson = people.FindOne(query)
+                match foundPerson with
+                | { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time } -> pass()
+                | otherwise -> fail()                                         
     ]

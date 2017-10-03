@@ -19,32 +19,36 @@ use db = new LiteDatabase("simple.db", mapper)
 LiteDB.FSharp is made mainly to work with records as representations of the persisted documents. The library *requires* that records have a primary key called `Id` or `id`. This field is then mapped to `_id` when converted to a bson document for indexing.
 
 ```fsharp
+type Genre = Rock | Pop | Metal
+
 type Album = {
     Id: int
     Name: string
     DateReleased: DateTime
+    Genre: Genre
 }
 ```
 Get a typed collection from the database:
 ```fsharp
 let albums = db.GetCollection<Album>("albums")
 ```
-### Insert documents:
+### Insert documents
 ```fsharp
 let metallica = 
     { Id = 1; 
-      Name = "Metallica", 
+      Name = "Metallica";
+      Genre = Metal;
       DateReleased = DateTime(1991, 8, 12) }
 
 albums.Insert(metallica)
 ```
-### Query one document by Id:
+### Query one document by Id
 ```fsharp
 let id = BsonValue(1)
 // result : Album
 let result = albums.FindById(id)
 ```
-### Query many documents depending on the value of a field:
+### Query many documents depending on the value of a field
 ```fsharp
 // Find all albums where Album["Name"] = "Metallica"
 let name = BsonValue("Metallica")
@@ -52,7 +56,15 @@ let query = Query.EQ("Name", name)
 // metallicaAlbums : Seq<Album>
 let metallicaAlbums = albums.Find(query)
 ```
-### Query documents between time intervals:
+### Query documents by value of discriminated union
+```fsharp
+// find all albums where Genre = Rock
+let genre = BsonValue("Rock")
+let query = Query.EQ("Genre", genre)
+// metallicaAlbums : Seq<Album>
+let rockAlbums = albums.Find(query)
+```
+### Query documents between or time intervals
 ```fsharp
 // find all albums released last year
 let now = DateTime.Now
