@@ -40,7 +40,7 @@ albums.Insert(metallica)
 ```
 ### Query one document by Id:
 ```fsharp
-let id = Bson.fromInt 1
+let id = BsonValue(1)
 // result : Album
 let result = albums.FindById(id)
 ```
