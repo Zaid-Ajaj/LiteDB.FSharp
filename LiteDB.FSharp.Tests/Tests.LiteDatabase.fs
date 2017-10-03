@@ -89,7 +89,7 @@ let liteDatabaseUsage =
                 people.Find(query)
                 |> Seq.length 
                 |> function | 1 -> pass()
-                            | n -> fail()     
+                            | n -> fail()
 
         testCase "Search between time intervals using Query.Between" <| fun _ ->
             useDatabase <| fun db ->
