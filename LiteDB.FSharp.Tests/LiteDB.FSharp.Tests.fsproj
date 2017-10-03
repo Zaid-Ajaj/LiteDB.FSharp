@@ -5,7 +5,9 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Tests.Types.fs" />
     <Compile Include="Tests.Bson.fs" />
+    <Compile Include="Tests.LiteDatabase.fs" />
     <Compile Include="Tests.Runner.fs" />
   </ItemGroup>
   <ItemGroup>

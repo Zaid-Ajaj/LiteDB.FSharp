@@ -9,10 +9,15 @@ open LiteDB
 
 
 /// Utilities to convert between BSON document and F# types
+[<RequireQualifiedAccess>]
 module Bson = 
     /// Returns the value of entry in the BsonDocument by it's key
     let read key (doc: BsonDocument) =
         doc.[key]
+    /// Creates a BsonValue with an integer as content.
+    let fromInt (number: int) = BsonValue(number)
+    /// Creates a BsonValue with a string as content.
+    let str (content: string) = BsonValue(content)
 
     /// Reads a property from a BsonDocument by it's key as a string
     let readStr key (doc: BsonDocument) = 
