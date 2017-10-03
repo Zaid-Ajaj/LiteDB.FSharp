@@ -39,6 +39,7 @@ type Kind =
     | Guid = 10
     | Decimal = 11
     | Binary = 12
+    | ObjectId = 13
 
 /// Helper for serializing map/dict with non-primitive, non-string keys such as unions and records.
 /// Performs additional serialization/deserialization of the key object and uses the resulting JSON
@@ -116,6 +117,8 @@ type FSharpJsonConverter() =
                 then Kind.Option
                 elif t.FullName = "System.Int64"
                 then Kind.Long
+                elif t = typeof<LiteDB.ObjectId>
+                then Kind.ObjectId
                 elif t.FullName = "System.Numerics.BigInteger"
                 then Kind.BigInt
                 elif t = typeof<byte[]> 
@@ -150,6 +153,11 @@ type FSharpJsonConverter() =
                 let guidValue = (value :?> Guid).ToString()
                 guidObject.Add(JProperty("$guid", guidValue))
                 guidObject.WriteTo(writer)
+            | true, Kind.ObjectId ->
+                let objectId = value |> unbox<ObjectId>
+                let oid = JObject()
+                oid.Add(JProperty("$oid", objectId.ToString()))
+                oid.WriteTo(writer)
             | true, Kind.DateTime ->
                 let dt = value :?> DateTime
                 let universalTime = if dt.Kind = DateTimeKind.Local then dt.ToUniversalTime() else dt
@@ -200,6 +208,10 @@ type FSharpJsonConverter() =
             let jsonObject = JObject.Load(reader)
             let value = jsonObject.["$guid"].Value<string>()
             upcast Guid.Parse(value)
+        | true, Kind.ObjectId ->
+            let jsonObject = JObject.Load(reader)
+            let value = jsonObject.["$oid"].Value<string>()
+            upcast ObjectId(value)
         | true, Kind.Decimal ->
             let jsonObject = JObject.Load(reader)
             let value = jsonObject.["$numberDecimal"].Value<string>()

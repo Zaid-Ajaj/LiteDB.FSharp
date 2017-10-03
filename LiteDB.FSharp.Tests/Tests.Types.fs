@@ -16,7 +16,7 @@ type RecordWithDecimal = { id: int; number: decimal }
 type RecordWithLong = { id: int; long: int64 }
 type RecordWithGuid = { id: int; guid: Guid }
 type RecordWithBytes = { id: int; data:byte[] }
-
+type RecordWithObjectId = { id: LiteDB.ObjectId }
 type Shape = 
     | Circle of float
     | Rect of float * float

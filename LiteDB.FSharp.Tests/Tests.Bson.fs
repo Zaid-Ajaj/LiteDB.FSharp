@@ -34,6 +34,14 @@ let bsonConversions =
       match Bson.deserialize<LowerCaseId> doc with
       | { id = 1; age = 19 } -> pass()
       | otherwise -> fail()
+      
+    testCase "Bson serialization and deserialization of ObjectId works" <| fun _ ->
+      let id = ObjectId.NewObjectId()
+      let record = { id = id }
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithObjectId> doc with
+      | { id = x } when x = id -> pass()
+      | otherwise -> fail()
 
     testCase "records with decimals" <| fun _ ->
       let record = { id = 1; number = 20.0M }
