@@ -164,6 +164,20 @@ let bsonConversions =
         | false -> fail()
       | otherwise -> fail()
 
+    testCase "Reading Bson values as DateTime works" <| fun _ ->
+    
+      let record = { id = 1; created = DateTime(2017, 10, 15) }
+      let doc = Bson.serialize record 
+      let createdField = Bson.read "created" doc
+      let created1 = createdField.AsDateTime
+      let created2 = Bson.deserializeField<DateTime> createdField
+      Expect.equal created1.Year 2017 "Year is deserialized correctly"
+      Expect.equal created2.Year 2017 "Year is deserialized correctly"
+      Expect.equal created1.Month 10 "Month is deserialized correctly"
+      Expect.equal created2.Month 10 "Month is deserialized correctly"
+      Expect.equal created1.Day 15 "Day is deserialized correctly"
+      Expect.equal created2.Day 15 "Day is deserialized correctly"
+      
     testCase "Binary data is serialized correctly" <| fun _ ->
       let bytes = Array.map byte [| 1 .. 10 |]
       let record = {id = 1; data = bytes }

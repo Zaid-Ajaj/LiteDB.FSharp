@@ -135,7 +135,9 @@ let liteDatabaseUsage =
                 let searchQuery = 
                     Query.Where("Shape", fun bsonValue -> 
                         let shapeValue = Bson.deserializeField<Shape> bsonValue
-                        shapeValue = shape
+                        match shapeValue with
+                        | Composite [ Circle 2.0; other ] -> true
+                        | otherwise -> false
                     )
 
                 records.Find(searchQuery)

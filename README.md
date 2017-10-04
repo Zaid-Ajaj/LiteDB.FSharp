@@ -74,7 +74,21 @@ let query = Query.Between("DateReleased", dateFrom, dateTo)
 // albumsLastYear : Seq<Album>
 let albumsLastYear = albums.Find(query)
 ```
-### Finally, example of fully customized search by nested discriminated unions
+### Customized search using Query.Where
+The function `Query.Where` expects a field name and a filter function of type `BsonValue -> bool`. You can deserialize the `BsonValue` using `Bson.deserializeField<'t>` where `'t` is the type of the serialized value. 
+
+```fsharp
+// Filtering albums released a year divisble by 5
+let searchQuery = 
+    Query.Where("DateReleased", fun bsonValue ->
+        // dateReleased : DateTime
+        let dateReleased = Bson.deserializeField<DateTime> bsonValue
+        let year = dateReleased.Year
+        year % 5 = 0
+    )
+
+let searchResult = albums.Find(searchQuery)
+```
 ```fsharp
 type Shape = 
     | Circle of float
@@ -83,24 +97,22 @@ type Shape =
 
 type RecordWithShape = { Id: int; Shape: Shape }
 
-testCase "Full custom search works by BsonValue deserialization" <| fun _ ->
-  useDatabase <| fun db ->
-    let records = db.GetCollection<RecordWithShape> "Shapes"                       
-    let shape = 
-        Composite [ 
-          Circle 2.0;
-          Composite [ Circle 4.0; Rect(2.0, 5.0) ]
-        ]
-   let record = { Id = 1; Shape = shape }
+let records = db.GetCollection<RecordWithShape>("shapes")
 
-    records.Insert(record) |> ignore
+let shape = 
+    Composite [ 
+      Circle 2.0;
+      Composite [ Circle 4.0; Rect(2.0, 5.0) ]
+    ]
+
+let record = { Id = 1; Shape = shape }
+records.Insert(record) |> ignore
     let searchQuery = 
         Query.Where("Shape", fun bsonValue -> 
-            // Bson.derserializa<'t> won't work because that is 
-            // only for documents,
-            // that's why use Bson.deserializeField<'t> because you are filtering BsonValues
             let shapeValue = Bson.deserializeField<Shape> bsonValue
-            shapeValue = shape
+            match shapeValue with
+            | Composite [ Circle 2.0; other ] -> true
+            | otherwise -> false
         )
 
     records.Find(searchQuery)
