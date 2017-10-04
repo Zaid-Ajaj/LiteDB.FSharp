@@ -178,6 +178,21 @@ let bsonConversions =
       Expect.equal created1.Day 15 "Day is deserialized correctly"
       Expect.equal created2.Day 15 "Day is deserialized correctly"
       
+    testCase "Bson (de)serialization for options works" <| fun _ ->
+      let record = { id = 1; generic = Some 1 }
+      let doc = Bson.serialize record
+
+      doc 
+      |> Bson.read "generic"
+      |> Bson.deserializeField<Option<int>>
+      |> function
+          | Some 1 -> pass()
+          | other -> fail()
+        
+      match Bson.deserialize<RecordWithOption> doc with
+      | { id = 1; generic = Some 1 } -> pass()
+      | otherwise -> fail()
+
     testCase "Binary data is serialized correctly" <| fun _ ->
       let bytes = Array.map byte [| 1 .. 10 |]
       let record = {id = 1; data = bytes }

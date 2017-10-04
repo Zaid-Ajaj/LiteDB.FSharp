@@ -17,6 +17,7 @@ type RecordWithLong = { id: int; long: int64 }
 type RecordWithGuid = { id: int; guid: Guid }
 type RecordWithBytes = { id: int; data:byte[] }
 type RecordWithObjectId = { id: LiteDB.ObjectId }
+type RecordWithOption = { id:int; generic: Option<int>  }
 type Shape = 
     | Circle of float
     | Rect of float * float
