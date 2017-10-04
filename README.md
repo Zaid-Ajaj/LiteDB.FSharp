@@ -89,6 +89,7 @@ let searchQuery =
 
 let searchResult = albums.Find(searchQuery)
 ```
+### Query.Where: Filtering documents by matching with values of a nested DU
 ```fsharp
 type Shape = 
     | Circle of float
@@ -107,17 +108,18 @@ let shape =
 
 let record = { Id = 1; Shape = shape }
 records.Insert(record) |> ignore
-    let searchQuery = 
-        Query.Where("Shape", fun bsonValue -> 
-            let shapeValue = Bson.deserializeField<Shape> bsonValue
-            match shapeValue with
-            | Composite [ Circle 2.0; other ] -> true
-            | otherwise -> false
-        )
 
-    records.Find(searchQuery)
-    |> Seq.length
-    |> function 
-        | 1 -> pass() // passed!
-        | n -> fail()
+let searchQuery = 
+    Query.Where("Shape", fun bsonValue -> 
+        let shapeValue = Bson.deserializeField<Shape> bsonValue
+        match shapeValue with
+        | Composite [ Circle 2.0; other ] -> true
+        | otherwise -> false
+    )
+
+records.Find(searchQuery)
+|> Seq.length
+|> function 
+    | 1 -> pass() // passed!
+    | n -> fail()
 ```
