@@ -71,8 +71,15 @@ module Bson =
         |> LiteDB.JsonSerializer.Serialize // Bson to Json
         |> fun json -> JsonConvert.DeserializeObject(json, entityType, converters) // Json to obj
     
-    /// Deserialized a field of a BsonDocument to a typed entity
+    /// Turns an object into a BsonValue. The object does not have to be a document, it could be any value. No idenitifier fields are reqiuired.
+    let serializeField(any: obj) : BsonValue = 
+        // Entity => Json => Bson
+        let json = JsonConvert.SerializeObject(any, Formatting.None, converters);
+        LiteDB.JsonSerializer.Deserialize(json);
+
+    /// Deserializes a field of a BsonDocument to a typed entity
     let deserializeField<'t> (value: BsonValue) = 
+        // Bson => Json => Entity<'t>
         let typeInfo = typeof<'t>
         value
         // Bson to Json

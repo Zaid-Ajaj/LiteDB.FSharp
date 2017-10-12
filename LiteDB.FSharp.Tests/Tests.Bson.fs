@@ -212,7 +212,14 @@ let bsonConversions =
       match Bson.deserialize<RecordWithBytes> doc with
       | { id = 1; data = xs } when xs = bytes -> pass()
       | otherwise -> fail()
-
+    
+    testCase "(De)serialization of field work" <| fun _ ->
+      let sample = Generic (Just 5)
+      let serialized = Bson.serializeField sample
+      match Bson.deserializeField<ComplexUnion<int>> serialized with
+      | Generic (Just 5) -> pass()
+      | otherwise -> fail()
+      
     testCase "deserializing complex union from BsonValue" <| fun _ ->
       let shape = 
         Composite [ 

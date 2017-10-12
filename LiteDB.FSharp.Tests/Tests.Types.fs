@@ -24,3 +24,9 @@ type Shape =
     | Composite of Shape list
 
 type RecordWithShape = { Id: int; Shape: Shape }
+
+type ComplexUnion<'t> = 
+    | Any of 't
+    | Int of int
+    | String of string 
+    | Generic of Maybe<'t>
