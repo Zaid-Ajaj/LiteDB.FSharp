@@ -124,7 +124,7 @@ records.Find(searchQuery)
     | n -> fail()
 ```
 ### Id auto-incremented
- Add CLIMutableAttribute to record type and Set id 0
+ Add CLIMutableAttribute to record type and set Id 0
  ```fsharp
 [<CLIMutable>]
  type Album = {
