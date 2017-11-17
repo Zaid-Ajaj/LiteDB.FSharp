@@ -125,10 +125,12 @@ records.Find(searchQuery)
 ```
 ### Id auto-incremented
  Add [<CLIMutable>]attribute to record type
- [<CLIMutable>]
+ ```fsharp
+[<CLIMutable>]
  type Album = {
     Id: int
     Name: string
     DateReleased: DateTime
     Genre: Genre
 }
+ ```    
