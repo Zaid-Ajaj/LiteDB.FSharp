@@ -123,3 +123,12 @@ records.Find(searchQuery)
     | 1 -> pass() // passed!
     | n -> fail()
 ```
+### Id auto-incremented
+ Add [<CLIMutable>]attribute to record type
+ [<CLIMutable>]
+ type Album = {
+    Id: int
+    Name: string
+    DateReleased: DateTime
+    Genre: Genre
+}
