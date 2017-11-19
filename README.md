@@ -153,10 +153,4 @@ db.Insert(defaultOrder)|>ignore
 db.Update({defaultCompany with Name="Hello";Id=1})|>ignore
 //m is Hello
 let m=db.Query<Order>().Include(toLinq(<@fun c->c.Company@>)).FirstOrDefault().Company.Name
-    
-records.Find(searchQuery)
-|> Seq.length
-|> function 
-    | 1 -> pass() // passed!
-    | n -> fail()
 ```
