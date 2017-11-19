@@ -124,6 +124,9 @@ records.Find(searchQuery)
     | n -> fail()
 ```
 ### DbRef
+Using "mapper.Entity<Order>().DbRef(toLinq(<@fun c->c.Company@>))|>ignore " to set DbRef
+just as https://github.com/mbdavid/LiteDB/wiki/DbRef
+
 ```fsharp
 let toLinq (expr : Expr<'a -> 'b>) =
   let linq = LeafExpressionConverter.QuotationToExpression expr
