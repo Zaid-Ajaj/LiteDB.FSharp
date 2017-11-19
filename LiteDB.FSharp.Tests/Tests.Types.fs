@@ -30,3 +30,11 @@ type ComplexUnion<'t> =
     | Int of int
     | String of string 
     | Generic of Maybe<'t>
+[<CLIMutable>]
+type Company=
+  {Id :int
+   Name :string}   
+[<CLIMutable>]    
+type Order=
+  { Id :int
+    Company :Company }
