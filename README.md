@@ -123,3 +123,40 @@ records.Find(searchQuery)
     | 1 -> pass() // passed!
     | n -> fail()
 ```
+### DbRef
+```fsharp
+let toLinq (expr : Expr<'a -> 'b>) =
+  let linq = LeafExpressionConverter.QuotationToExpression expr
+  let call = linq :?> MethodCallExpression
+  let lambda = call.Arguments.[0] :?> LambdaExpression
+  Expression.Lambda<Func<'a, 'b>>(lambda.Body, lambda.Parameters) 
+[<CLIMutable>]
+type Company=
+  {Id :int
+   Name :string}   
+[<CLIMutable>]    
+type Order=
+  { Id :int
+    Company :Company }
+let defaultCompany=
+      {Id =0
+       Name ="test"}  
+let defaultOrder=
+  { Id =0
+    Company =defaultCompany}
+File.Delete("simple.db")|>ignore
+let mapper = FSharpBsonMapper()
+mapper.Entity<Order>().DbRef(toLinq(<@fun c->c.Company@>))|>ignore
+use db = new LiteRepository("simple.db",mapper)
+db.Insert(defaultCompany)|>ignore
+db.Insert(defaultOrder)|>ignore
+db.Update({defaultCompany with Name="Hello";Id=1})|>ignore
+//m is Hello
+let m=db.Query<Order>().Include(toLinq(<@fun c->c.Company@>)).FirstOrDefault().Company.Name
+    
+records.Find(searchQuery)
+|> Seq.length
+|> function 
+    | 1 -> pass() // passed!
+    | n -> fail()
+```
