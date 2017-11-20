@@ -123,3 +123,19 @@ records.Find(searchQuery)
     | 1 -> pass() // passed!
     | n -> fail()
 ```
+### Id auto-incremented
+ Add CLIMutableAttribute to record type and set Id 0
+ ```fsharp
+[<CLIMutable>]
+ type Album = {
+    Id: int
+    Name: string
+    DateReleased: DateTime
+    Genre: Genre
+}
+let metallica = 
+    { Id = 0; 
+      Name = "Metallica";
+      Genre = Metal;
+      DateReleased = DateTime(1991, 8, 12) }
+ ```    
