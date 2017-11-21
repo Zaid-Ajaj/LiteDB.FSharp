@@ -175,7 +175,6 @@ let m=db.Query<Order>().Include(toLinq(<@fun c->c.Company@>)).FirstOrDefault().C
 ```
 ### DbRef With List
 
-you need set EOrders with f# array instead of list 
 ```fsharp
 let toLinq (expr : Expr<'a -> 'b>) =
   let linq = LeafExpressionConverter.QuotationToExpression expr
@@ -194,7 +193,7 @@ type EOrder=
 type Order=
   { Id :int
     Company :Company
-    EOrders:EOrder array }
+    EOrders:EOrder list }
 let defaultCompany=
   {Id =0
    Name ="test"}  
@@ -203,7 +202,7 @@ let e2= {Id=0; OrderNumRange="test2"}
 let defaultOrder=
   { Id =0
     Company =defaultCompany
-    EOrders=[|e1;e2|]}
+    EOrders=[e1;e2]}
 File.Delete("simple.db")|>ignore
 let mapper = FSharpBsonMapper()
 //Add DbRef Fluently 
