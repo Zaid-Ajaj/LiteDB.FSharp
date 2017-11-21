@@ -207,11 +207,12 @@ let defaultOrder=
     EOrders=[|e1;e2|]}
 File.Delete("simple.db")|>ignore
 let mapper = FSharpBsonMapper()
+//Add DbRef Fluently 
 mapper.Entity<Order>().DbRef(toLinq(<@fun c->c.EOrders@>))|>ignore
 use db = new LiteRepository("simple.db",mapper)
 db.Insert<EOrder>([e1;e2])|>ignore
 db.Insert(defaultOrder)|>ignore
 db.Update({e1 with OrderNumRange="Hello";Id=1})|>ignore
-let m=db.Query<Order>().Include(toLinq(<@fun c->c.EOrders@>)).FirstOrDefault()
 //m.EOrders.[0].OrderNumRange Is  "Hello" 
+let m=db.Query<Order>().Include(toLinq(<@fun c->c.EOrders@>)).FirstOrDefault()
 ```
