@@ -42,14 +42,3 @@ type Order=
   { Id :int
     Company :Company
     EOrders:EOrder array}
-type PaperWeight=
-|G300 =300
-|G157=157
-|G128=128
-type CoatedPaper={PaperWeight:PaperWeight}
-type Paper=
-|CoatedPaper of CoatedPaper
-[<CLIMutable>]
-type OrderDetail=
- { Id:int
-   Paper :Paper }
