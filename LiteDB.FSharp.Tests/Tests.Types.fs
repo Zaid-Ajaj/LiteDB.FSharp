@@ -1,7 +1,6 @@
 module Tests.Types
 
 open System
-
 type Person = { Id: int; Name: string }
 type LowerCaseId = { id: int; age:int }
 type SimpleUnion = One | Two
@@ -35,6 +34,21 @@ type Company=
   {Id :int
    Name :string}   
 [<CLIMutable>]    
+type EOrder=
+  { Id :int
+    OrderNumRange :string }   
+[<CLIMutable>]    
 type Order=
   { Id :int
-    Company :Company }
+    Company :Company}
+type PaperWeight=
+|G300 =300
+|G157=157
+|G128=128
+type CoatedPaper={PaperWeight:PaperWeight}
+type Paper=
+|CoatedPaper of CoatedPaper
+[<CLIMutable>]
+type OrderDetail=
+ { Id:int
+   Paper :Paper }
