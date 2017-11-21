@@ -116,7 +116,6 @@ let searchQuery =
         | Composite [ Circle 2.0; other ] -> true
         | otherwise -> false
     )
-GitTest
 records.Find(searchQuery)
 |> Seq.length
 |> function 
