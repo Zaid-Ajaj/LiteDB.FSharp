@@ -194,7 +194,6 @@ type EOrder=
 type Order=
   { Id :int
     Company :Company
-    //f# array is multable and list is immultable
     EOrders:EOrder array }
 let defaultCompany=
   {Id =0
