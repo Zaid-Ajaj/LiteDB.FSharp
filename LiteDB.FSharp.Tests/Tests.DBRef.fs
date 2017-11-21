@@ -29,7 +29,7 @@ let dbRefTests =
       let defaultOrder=
         { Id =0
           Company =defaultCompany
-          EOrders=[||]}
+          EOrders=[]}
       File.Delete("simple.db")|>ignore
       let mapper = FSharpBsonMapper()
       mapper.Entity<Order>().DbRef(toLinq(<@fun c->c.Company@>))|>ignore
@@ -64,7 +64,7 @@ let dbRefTests =
       let defaultOrder=
         { Id =0
           Company =defaultCompany
-          EOrders=[|e1;e2|]}
+          EOrders=[e1;e2]}
       File.Delete("simple.db")|>ignore
       let mapper = FSharpBsonMapper()
       mapper.Entity<Order>().DbRef(toLinq(<@fun c->c.EOrders@>))|>ignore
@@ -83,7 +83,7 @@ let dbRefTests =
       let defaultOrder=
         { Id =0
           Company =defaultCompany
-          EOrders=[|e1;e2|]}
+          EOrders=[e1;e2]}
       File.Delete("simple.db")|>ignore
       let mapper = FSharpBsonMapper()
       mapper.Entity<Order>().DbRef(toLinq(<@fun c->c.EOrders@>))|>ignore
