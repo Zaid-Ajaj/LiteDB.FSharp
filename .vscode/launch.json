@@ -10,9 +10,6 @@
             "program": "${workspaceRoot}/LiteDB.FSharp.Tests/bin/Debug/netcoreapp2.0/LiteDB.FSharp.Tests.dll",
             "args": [],
             "cwd": "${workspaceRoot}/LiteDB.FSharp.Tests",
-            // "type": "clr",            
-            // "program": "${workspaceRoot}/ServerCopy/bin/Debug/net461/win7-x64/ServerCopy.exe",            
-            // "cwd": "${workspaceRoot}/ServerCopy",
             "stopAtEntry": false,
             "console": "internalConsole"
         },
