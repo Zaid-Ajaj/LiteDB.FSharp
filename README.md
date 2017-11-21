@@ -158,8 +158,7 @@ let m=db.Query<Order>().Include(toLinq(<@fun c->c.Company@>)).FirstOrDefault().C
 ```
 ### DbRef With List
 
-just as https://github.com/mbdavid/LiteDB/wiki/DbRef
-you need set EOrders with f# array but not instead of list 
+you need set EOrders with f# array instead of list 
 ```fsharp
 let toLinq (expr : Expr<'a -> 'b>) =
   let linq = LeafExpressionConverter.QuotationToExpression expr
