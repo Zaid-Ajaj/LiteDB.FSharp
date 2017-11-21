@@ -58,6 +58,8 @@ module Bson =
 
     /// Converts a BsonDocument to a typed entity given the document the type of the CLR entity.
     let deserializeByType (entity: BsonDocument) (entityType: Type) = 
+            //Rewrite deserializeByType thus we can Reslove NestedId Corrently 
+            //Just See DbRef NestedId Test
             let getKeyFieldName (entityType: Type)= 
               if FSharpType.IsRecord entityType 
               then FSharpType.GetRecordFields entityType 
