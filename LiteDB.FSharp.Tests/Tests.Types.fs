@@ -41,4 +41,4 @@ type EOrder=
 type Order=
   { Id :int
     Company :Company
-    EOrders:EOrder array}
+    EOrders:EOrder list}
