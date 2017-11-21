@@ -60,6 +60,13 @@ module Bson =
     let deserializeByType (entity: BsonDocument) (entityType: Type) = 
             //Rewrite deserializeByType thus we can Reslove NestedId Corrently 
             //Just See DbRef NestedId Test
+            //The Code is dirty - -!
+            let getCollectionElementType (collectionType:Type)=
+                if collectionType.Name = "FSharpList`1" then 
+                    collectionType.GetGenericArguments().[0]
+                else if collectionType.IsArray then
+                    collectionType.GetElementType()
+                else failwith "getCollectionElementType Error"            
             let getKeyFieldName (entityType: Type)= 
               if FSharpType.IsRecord entityType 
               then FSharpType.GetRecordFields entityType 
@@ -90,18 +97,18 @@ module Bson =
                                 rewriteKey (bson.RawValue.Keys|>List.ofSeq) bson cEntityType cKey
                                 continueToNext()
                         |_,(:?BsonArray as bsonArray)->
-                            let c=entityType.GetProperty(y)
                             let collectionType=entityType.GetProperty(y).PropertyType
-                            match collectionType.Name with
-                            |"FSharpList`1"-> continueToNext()
-                            |_->let cEntityType=entityType.GetProperty(y).PropertyType.GetElementType()
-                                let cKey=getKeyFieldName cEntityType
+                            let elementType=getCollectionElementType collectionType
+                            if  FSharpType.IsRecord elementType then
+                                let cKey=getKeyFieldName elementType
                                 bsonArray
                                 |>Seq.iter(fun bson-> 
                                       match bson with 
                                       | :?BsonDocument as bson->
-                                         rewriteKey (bson.RawValue.Keys|>List.ofSeq) bson cEntityType cKey
+                                         rewriteKey (bson.RawValue.Keys|>List.ofSeq) bson elementType cKey
                                       | _ -> ())
+                                continueToNext()
+                            else 
                                 continueToNext()
                         |_ ->continueToNext()
                 rewriteKey xs entity entityType (getKeyFieldName entityType)
