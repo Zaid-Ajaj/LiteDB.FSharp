@@ -40,7 +40,8 @@ type EOrder=
 [<CLIMutable>]    
 type Order=
   { Id :int
-    Company :Company}
+    Company :Company
+    EOrders:EOrder array}
 type PaperWeight=
 |G300 =300
 |G157=157

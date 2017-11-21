@@ -58,36 +58,57 @@ module Bson =
 
     /// Converts a BsonDocument to a typed entity given the document the type of the CLR entity.
     let deserializeByType (entity: BsonDocument) (entityType: Type) = 
+            let getKeyFieldName (entityType: Type)= 
+              if FSharpType.IsRecord entityType 
+              then FSharpType.GetRecordFields entityType 
+                   |> Seq.tryFind (fun field -> field.Name = "Id" || field.Name = "id")
+                   |> function | Some field -> field.Name
+                               | None -> "Id"
+              else "Id"   
             let rewriteAllKey (entity:BsonDocument)=    
                 let xs=entity.RawValue.Keys|>List.ofSeq
-                let rec rewriteKey (xs:string list)  (entity:BsonDocument) (entityType: Type)=
-                    let key:string = 
-                      if FSharpType.IsRecord entityType 
-                      then FSharpType.GetRecordFields entityType 
-                           |> Seq.tryFind (fun field -> field.Name = "Id" || field.Name = "id")
-                           |> function | Some field -> field.Name
-                                       | None -> "Id"
-                      else "Id"
+                let rec rewriteKey (xs:string list)  (entity:BsonDocument) (entityType: Type) key=
                     match xs with 
                     |[]  -> ()
                     |y::ys -> 
+                        let continueToNext()= rewriteKey ys entity entityType key 
                         match y,entity.RawValue.[y] with 
                         |"_id",id->
                             entity
                             |>withKeyValue key id
                             |>removeEntryByKey "_id"
                             |>ignore
-                            rewriteKey ys entity entityType
+                            continueToNext()
                         |_,(:?BsonDocument as bson) ->
-                            rewriteKey (bson.RawValue.Keys|>List.ofSeq) bson (entityType.GetProperty(y).PropertyType)
-                            rewriteKey ys entity entityType
-                        |_ ->rewriteKey ys entity entityType
-                rewriteKey xs entity entityType
+                            let cEntityType=entityType.GetProperty(y).PropertyType
+                            if FSharpType.IsUnion cEntityType then 
+                               continueToNext()
+                            else
+                                let cKey=getKeyFieldName cEntityType
+                                rewriteKey (bson.RawValue.Keys|>List.ofSeq) bson cEntityType cKey
+                                continueToNext()
+                        |_,(:?BsonArray as bsonArray)->
+                            let c=entityType.GetProperty(y)
+                            let collectionType=entityType.GetProperty(y).PropertyType
+                            match collectionType.Name with
+                            |"FSharpList`1"-> continueToNext()
+                            |_->let cEntityType=entityType.GetProperty(y).PropertyType.GetElementType()
+                                let cKey=getKeyFieldName cEntityType
+                                bsonArray
+                                |>Seq.iter(fun bson-> 
+                                      match bson with 
+                                      | :?BsonDocument as bson->
+                                         rewriteKey (bson.RawValue.Keys|>List.ofSeq) bson cEntityType cKey
+                                      | _ -> ())
+                                continueToNext()
+                        |_ ->continueToNext()
+                rewriteKey xs entity entityType (getKeyFieldName entityType)
                 entity
 
             rewriteAllKey entity 
             |>LiteDB.JsonSerializer.Serialize
             |>fun json -> JsonConvert.DeserializeObject(json, entityType, converters)
+
     let serializeField(any: obj) : BsonValue = 
         // Entity => Json => Bson
         let json = JsonConvert.SerializeObject(any, Formatting.None, converters);
