@@ -163,10 +163,12 @@ let defaultOrder=
     Company =defaultCompany}
 File.Delete("simple.db")|>ignore
 let mapper = FSharpBsonMapper()
+//Add DbRef Fluently 
 mapper.Entity<Order>().DbRef(toLinq(<@fun c->c.Company@>))|>ignore
 use db = new LiteRepository("simple.db",mapper)
 db.Insert(defaultCompany)|>ignore
 db.Insert(defaultOrder)|>ignore
+// Id auto-incremented So Id is1
 db.Update({defaultCompany with Name="Hello";Id=1})|>ignore
 //m is Hello
 let m=db.Query<Order>().Include(toLinq(<@fun c->c.Company@>)).FirstOrDefault().Company.Name
@@ -192,6 +194,7 @@ type EOrder=
 type Order=
   { Id :int
     Company :Company
+    //f# array is multable and list is immultable
     EOrders:EOrder array }
 let defaultCompany=
   {Id =0
