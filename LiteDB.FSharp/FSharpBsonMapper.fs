@@ -11,6 +11,7 @@ type FSharpBsonMapper() =
     override self.ToObject(entityType: System.Type, entity: BsonDocument) = Bson.deserializeByType entity entityType 
     override self.ToObject<'t>(entity: BsonDocument) = Bson.deserialize<'t> entity
     override self.ToDocument<'t>(entity: 't) = 
+        //Add DBRef Feature :set field value with $ref  
         let withEntityMap (doc:BsonDocument)=
             let t=entityMappers.Item (entity.GetType())
             t.Members
