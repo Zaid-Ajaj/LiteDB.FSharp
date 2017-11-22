@@ -138,6 +138,7 @@ let metallica =
       Genre = Metal;
       DateReleased = DateTime(1991, 8, 12) }
  ```    
+
 ### DbRef
 just as https://github.com/mbdavid/LiteDB/wiki/DbRef
 
@@ -173,44 +174,4 @@ db.Update({defaultCompany with Name="Hello";Id=1})|>ignore
 //m is Hello
 let m=db.Query<Order>().Include(toLinq(<@fun c->c.Company@>)).FirstOrDefault().Company.Name
 ```
-### DbRef With List
 
-```fsharp
-let toLinq (expr : Expr<'a -> 'b>) =
-  let linq = LeafExpressionConverter.QuotationToExpression expr
-  let call = linq :?> MethodCallExpression
-  let lambda = call.Arguments.[0] :?> LambdaExpression
-  Expression.Lambda<Func<'a, 'b>>(lambda.Body, lambda.Parameters) 
-[<CLIMutable>]
-type Company=
-  {Id :int
-   Name :string}   
-[<CLIMutable>]    
-type EOrder=
-  { Id :int
-    OrderNumRange :string }      
-[<CLIMutable>]    
-type Order=
-  { Id :int
-    Company :Company
-    EOrders:EOrder list }
-let defaultCompany=
-  {Id =0
-   Name ="test"}  
-let e1= {Id=0; OrderNumRange="test1"}
-let e2= {Id=0; OrderNumRange="test2"}
-let defaultOrder=
-  { Id =0
-    Company =defaultCompany
-    EOrders=[e1;e2]}
-File.Delete("simple.db")|>ignore
-let mapper = FSharpBsonMapper()
-//Add DbRef Fluently 
-mapper.Entity<Order>().DbRef(toLinq(<@fun c->c.EOrders@>))|>ignore
-use db = new LiteRepository("simple.db",mapper)
-db.Insert<EOrder>([e1;e2])|>ignore
-db.Insert(defaultOrder)|>ignore
-db.Update({e1 with OrderNumRange="Hello";Id=1})|>ignore
-//m.EOrders.[0].OrderNumRange Is  "Hello" 
-let m=db.Query<Order>().Include(toLinq(<@fun c->c.EOrders@>)).FirstOrDefault()
-```
