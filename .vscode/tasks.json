@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Test",
+            "command": "dotnet",
+            "group": "build",
+            "args": [
+                "build",
+                "LiteDB.FSharp.Tests/LiteDB.FSharp.Tests.fsproj"
+            ],
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        }
+    
+    ]
+}

@@ -58,20 +58,66 @@ module Bson =
 
     /// Converts a BsonDocument to a typed entity given the document the type of the CLR entity.
     let deserializeByType (entity: BsonDocument) (entityType: Type) = 
-        let key = 
-          if FSharpType.IsRecord entityType 
-          then FSharpType.GetRecordFields entityType 
-               |> Seq.tryFind (fun field -> field.Name = "Id" || field.Name = "id")
-               |> function | Some field -> field.Name
-                           | None -> "Id"
-          else "Id"
-        entity
-        |> withKeyValue key (read "_id" entity) 
-        |> removeEntryByKey "_id"
-        |> LiteDB.JsonSerializer.Serialize // Bson to Json
-        |> fun json -> JsonConvert.DeserializeObject(json, entityType, converters) // Json to obj
-    
-    /// Turns an object into a BsonValue. The object does not have to be a document, it could be any value. No idenitifier fields are reqiuired.
+            //Rewrite deserializeByType thus we can Reslove NestedId Corrently 
+            //Just See DbRef NestedId Test
+            //The Code is dirty - -!
+            let getCollectionElementType (collectionType:Type)=
+                if collectionType.Name = "FSharpList`1" then 
+                    collectionType.GetGenericArguments().[0]
+                else if collectionType.IsArray then
+                    collectionType.GetElementType()
+                else failwith "getCollectionElementType Error"            
+            let getKeyFieldName (entityType: Type)= 
+              if FSharpType.IsRecord entityType 
+              then FSharpType.GetRecordFields entityType 
+                   |> Seq.tryFind (fun field -> field.Name = "Id" || field.Name = "id")
+                   |> function | Some field -> field.Name
+                               | None -> "Id"
+              else "Id"   
+            let rewriteAllKey (entity:BsonDocument)=    
+                let xs=entity.RawValue.Keys|>List.ofSeq
+                let rec rewriteKey (xs:string list)  (entity:BsonDocument) (entityType: Type) key=
+                    match xs with 
+                    |[]  -> ()
+                    |y::ys -> 
+                        let continueToNext()= rewriteKey ys entity entityType key 
+                        match y,entity.RawValue.[y] with 
+                        |"_id",id->
+                            entity
+                            |>withKeyValue key id
+                            |>removeEntryByKey "_id"
+                            |>ignore
+                            continueToNext()
+                        |_,(:?BsonDocument as bson) ->
+                            let cEntityType=entityType.GetProperty(y).PropertyType
+                            if FSharpType.IsUnion cEntityType then 
+                               continueToNext()
+                            else
+                                let cKey=getKeyFieldName cEntityType
+                                rewriteKey (bson.RawValue.Keys|>List.ofSeq) bson cEntityType cKey
+                                continueToNext()
+                        |_,(:?BsonArray as bsonArray)->
+                            let collectionType=entityType.GetProperty(y).PropertyType
+                            let elementType=getCollectionElementType collectionType
+                            if  FSharpType.IsRecord elementType then
+                                let cKey=getKeyFieldName elementType
+                                bsonArray
+                                |>Seq.iter(fun bson-> 
+                                      match bson with 
+                                      | :?BsonDocument as bson->
+                                         rewriteKey (bson.RawValue.Keys|>List.ofSeq) bson elementType cKey
+                                      | _ -> ())
+                                continueToNext()
+                            else 
+                                continueToNext()
+                        |_ ->continueToNext()
+                rewriteKey xs entity entityType (getKeyFieldName entityType)
+                entity
+
+            rewriteAllKey entity 
+            |>LiteDB.JsonSerializer.Serialize
+            |>fun json -> JsonConvert.DeserializeObject(json, entityType, converters)
+
     let serializeField(any: obj) : BsonValue = 
         // Entity => Json => Bson
         let json = JsonConvert.SerializeObject(any, Formatting.None, converters);

@@ -4,6 +4,7 @@ open Expecto
 open Expecto.Logging
 open Tests.Bson
 open Tests.LiteDatabase
+open Tests.DBRef
 
 let testConfig =  
     { Expecto.Tests.defaultConfig with 
@@ -14,6 +15,7 @@ let liteDbTests =
     testList "All tests" [  
         bsonConversions
         liteDatabaseUsage
+        dbRefTests
     ]
 
 
