@@ -91,5 +91,5 @@ let dbRefTests =
       db.Insert<EOrder>([e1;e2])|>ignore
       db.Insert(defaultOrder)|>ignore
       let m=db.Query<Order>().Include(toLinq(<@fun c->c.EOrders@>)).FirstOrDefault()
-      Expect.equal m.EOrders.[0].Id  1 "CLIType DBRef with list NestedId token Test Corrently"             
+      Expect.equal m.EOrders.[0].Id  1 "CLIType DBRef with list NestedId token Test Corrently travis-ciTest"             
   ]
