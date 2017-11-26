@@ -9,13 +9,6 @@ open Tests.Types
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Linq.RuntimeHelpers
 open System.Linq.Expressions
-open Tests.LiteDatabase
-open LiteDB
-open LiteDB
-open Tests.LiteDatabase
-open Tests.LiteDatabase
-open Tests.LiteDatabase
-
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
