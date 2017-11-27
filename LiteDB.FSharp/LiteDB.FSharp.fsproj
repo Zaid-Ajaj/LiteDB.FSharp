@@ -4,6 +4,7 @@
     <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Help.fs" />
     <Compile Include="Json.fs" />
     <Compile Include="Bson.fs" />
     <Compile Include="FSharpBsonMapper.fs" />
