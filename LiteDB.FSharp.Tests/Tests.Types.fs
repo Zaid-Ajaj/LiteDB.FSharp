@@ -29,16 +29,19 @@ type ComplexUnion<'t> =
     | Int of int
     | String of string 
     | Generic of Maybe<'t>
+    
 [<CLIMutable>]
 type Company=
-  {Id :int
-   Name :string}   
+  { Id: int
+    Name: string}   
+
 [<CLIMutable>]    
 type EOrder=
-  { Id :int
-    OrderNumRange :string }   
+  { Id: int
+    OrderNumRange: string }   
+
 [<CLIMutable>]    
 type Order=
-  { Id :int
-    Company :Company
-    EOrders:EOrder list}
+  { Id : int
+    Company : Company
+    EOrders : EOrder list}

@@ -3,8 +3,9 @@ open System.Linq.Expressions
 open System
 open Microsoft.FSharp.Linq.RuntimeHelpers
 open Microsoft.FSharp.Quotations
-module Help=
-    let toLinq (expr : Expr<'a -> 'b>) =
+
+module Linq =
+    let convertExpr (expr : Expr<'a -> 'b>) =
       let linq = LeafExpressionConverter.QuotationToExpression expr
       let call = linq :?> MethodCallExpression
       let lambda = call.Arguments.[0] :?> LambdaExpression

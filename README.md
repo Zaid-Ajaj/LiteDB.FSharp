@@ -143,35 +143,40 @@ let metallica =
 just as https://github.com/mbdavid/LiteDB/wiki/DbRef
 
 ```fsharp
-let toLinq (expr : Expr<'a -> 'b>) =
-  let linq = LeafExpressionConverter.QuotationToExpression expr
-  let call = linq :?> MethodCallExpression
-  let lambda = call.Arguments.[0] :?> LambdaExpression
-  Expression.Lambda<Func<'a, 'b>>(lambda.Body, lambda.Parameters) 
+open LiteDB.FSharp.Linq
+
 [<CLIMutable>]
 type Company=
-  {Id :int
-   Name :string}   
+  { Id : int
+    Name : string}   
+
 [<CLIMutable>]    
 type Order=
   { Id :int
     Company :Company }
+
 let defaultCompany=
-      {Id =0
-       Name ="test"}  
-let defaultOrder=
-  { Id =0
-    Company =defaultCompany}
+      { Id = 0
+        Name = "test"}  
+let defaultOrder =
+  { Id = 0
+    Company = defaultCompany}
 File.Delete("simple.db")|>ignore
 let mapper = FSharpBsonMapper()
 //Add DbRef Fluently 
-mapper.Entity<Order>().DbRef(toLinq(<@fun c->c.Company@>))|>ignore
+mapper.Entity<Order>().DbRef(convertExpr <@ fun c -> c.Company @>)
 use db = new LiteRepository("simple.db",mapper)
-db.Insert(defaultCompany)|>ignore
-db.Insert(defaultOrder)|>ignore
+
+db.Insert(defaultCompany)
+db.Insert(defaultOrder)
+
 // Id auto-incremented So Id is1
-db.Update({defaultCompany with Name="Hello";Id=1})|>ignore
-//m is Hello
-let m=db.Query<Order>().Include(toLinq(<@fun c->c.Company@>)).FirstOrDefault().Company.Name
+db.Update({ defaultCompany with Name="Hello"; Id = 1 })
+
+let ordersWithCompanies = db.Query<Order>().Include(convertExpr <@ fun c -> c.Company @>)
+let companyName = ordersWithCompanies.FirstOrDefault().Company.Name
+match companyName with 
+| "Hello" -> pass()
+| otherwise -> fail()
 ```
 
