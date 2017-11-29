@@ -1,7 +1,9 @@
 source https://www.nuget.org/api/v2/
 
+storage:none
+
 nuget Expecto
 nuget FAKE
 nuget FSharp.Core
-nuget LiteDb
+nuget LiteDB
 nuget Newtonsoft.JSON
