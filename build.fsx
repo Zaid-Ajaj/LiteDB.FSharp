@@ -3,6 +3,13 @@
 open Fake
 open System
 open System.IO
+
+
+let cwd = __SOURCE_DIRECTORY__
+let dotnet = "dotnet"
+let projectPath = cwd </> "LiteDB.FSharp"
+
+
 let run workingDir fileName args =
     printfn "CWD: %s" workingDir
     let fileName, args =
@@ -16,14 +23,11 @@ let run workingDir fileName args =
             info.Arguments <- args) TimeSpan.MaxValue
     if not ok then
         failwithf "'%s> %s %s' task failed" workingDir fileName args
-let cwd = __SOURCE_DIRECTORY__
-let dotnet = "dotnet"
 
 Target "RunTests" <| fun () ->
     let testProjectPath = cwd </> "LiteDB.FSharp.Tests"
     "run LiteDB.FSharp.Tests.fsproj"
     |> run testProjectPath dotnet
-let projectPath = cwd </> "LiteDB.FSharp"
 
 Target "Clean" <| fun () -> 
     CleanDir (cwd </> projectPath </> "bin")
