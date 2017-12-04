@@ -1,6 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <Description>F# Support for LiteDB</Description>
+    <PackageProjectUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp.git</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageIconUrl></PackageIconUrl>
+    <PackageTags>fsharp;litedb;embedded;database;document-database</PackageTags>
+    <Authors>Zaid Ajaj</Authors>
+    <Version>0.7.0</Version>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>

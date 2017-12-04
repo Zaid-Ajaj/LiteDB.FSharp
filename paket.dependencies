@@ -1,9 +1,12 @@
-source https://www.nuget.org/api/v2/
+source https://www.nuget.org/api/v2
 
 storage:none
-
 nuget Expecto
-nuget FAKE
 nuget FSharp.Core
 nuget LiteDB
 nuget Newtonsoft.JSON
+
+group Build
+    framework >= net45
+    source https://www.nuget.org/api/v2
+    nuget FAKE
