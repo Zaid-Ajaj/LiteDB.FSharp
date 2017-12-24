@@ -8,13 +8,14 @@
     <PackageIconUrl></PackageIconUrl>
     <PackageTags>fsharp;litedb;embedded;database;document-database</PackageTags>
     <Authors>Zaid Ajaj</Authors>
-    <Version>0.7.0</Version>
+    <Version>0.8.0</Version>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Linq.fs" />
     <Compile Include="Json.fs" />
     <Compile Include="Bson.fs" />
+    <Compile Include="Extensions.fs" />
     <Compile Include="FSharpBsonMapper.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />

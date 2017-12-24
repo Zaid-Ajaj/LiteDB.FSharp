@@ -5,6 +5,8 @@ open System
 open System.IO
 open LiteDB
 open LiteDB.FSharp
+open LiteDB.FSharp.Extensions
+
 open Tests.Types
 
 type MaritalStatus = Single | Married
@@ -41,6 +43,21 @@ let liteDatabaseUsage =
                     Expect.equal 10 x.Month "Month is mapped correctly"
                     Expect.equal 15 x.Day "Day is mapped correctly"
                 | otherwise -> fail()
+
+        testCase "TryFindById extension works" <| fun _ ->
+            useDatabase <| fun db ->
+                let people = db.GetCollection<PersonDocument>("people")
+                let time = DateTime(2017, 10, 15)
+                let person = { Id = 1; Name = "Mike"; Age = 10; DateAdded = time; Status = Single }
+                people.Insert(person) |> ignore
+                // try find an existing person
+                match people.TryFindById(BsonValue(1)) with
+                | Some person -> pass() 
+                | None -> fail()
+                // try find a non-existing person
+                match people.TryFindById(BsonValue(500)) with
+                | Some person -> fail()
+                | None -> pass()
 
         testCase "Search by Query.Between integer field works" <| fun _ ->
             useDatabase <| fun db ->
