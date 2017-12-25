@@ -7,7 +7,13 @@ dist
 .vs
 .idea
 *.xml
+.idea/**/*
+.idea
 .idea.LiteDB.FSharp
+.idea/.idea.LiteDB.FSharp
+.idea/.idea.LiteDB.FSharp/.idea
+.idea/.idea.LiteDB.FSharp/.idea/*.xml
+
 .vscode
 LiteDB.FSharp.userprefs
 LiteDB.FSharp.sln.DotSettings.user
