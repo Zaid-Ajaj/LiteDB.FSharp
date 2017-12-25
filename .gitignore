@@ -4,3 +4,8 @@ packages
 paket-files
 .fake
 dist
+.vs
+.idea
+.vscode
+LiteDB.FSharp.userprefs
+LiteDB.FSharp.sln.DotSettings.user

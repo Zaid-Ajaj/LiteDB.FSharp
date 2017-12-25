@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Projects\Projects\F#\LiteDB.FSharp" t="IncludeFlat">
+      <e p="LiteDB.FSharp" t="IncludeRecursive">
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="Bson.fs" t="Include" />
+        <e p="Extensions.fs" t="Include" />
+        <e p="FSharpBsonMapper.fs" t="Include" />
+        <e p="Json.fs" t="Include" />
+        <e p="Linq.fs" t="Include" />
+        <e p="LiteDB.FSharp.fsproj" t="IncludeRecursive" />
+        <e p="obj" t="ExcludeRecursive" />
+      </e>
+      <e p="LiteDB.FSharp.sln" t="IncludeFlat" />
+      <e p="LiteDB.FSharp.Tests" t="IncludeRecursive">
+        <e p="bin" t="ExcludeRecursive" />
+        <e p="LiteDB.FSharp.Tests.fsproj" t="IncludeRecursive" />
+        <e p="obj" t="ExcludeRecursive" />
+        <e p="Tests.Bson.fs" t="Include" />
+        <e p="Tests.DBRef.fs" t="Include" />
+        <e p="Tests.LiteDatabase.fs" t="Include" />
+        <e p="Tests.Runner.fs" t="Include" />
+        <e p="Tests.Types.fs" t="Include" />
+      </e>
+      <e p="packages" t="ExcludeRecursive" />
+    </e>
+    <e p="C:\Users\Zaid\.Rider2017.2\system\resharper-host\local\Transient\ReSharperHost\v10\SolutionCaches\_LiteDB.FSharp.1025224810.00" t="ExcludeRecursive" />
+  </component>
+</project>
