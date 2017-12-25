@@ -6,6 +6,8 @@ paket-files
 dist
 .vs
 .idea
+*.xml
+.idea.LiteDB.FSharp
 .vscode
 LiteDB.FSharp.userprefs
 LiteDB.FSharp.sln.DotSettings.user
