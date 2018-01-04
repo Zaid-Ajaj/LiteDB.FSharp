@@ -78,13 +78,8 @@ module Bson =
               else "Id"
                  
             let rewriteAllKey (entity:BsonDocument)=    
-<<<<<<< HEAD
                 
                 let rec rewriteKey (xs:string list) (entity:BsonDocument) (entityType: Type) key=
-=======
-                let xs = List.ofSeq entity.RawValue.Keys 
-                let rec rewriteKey (xs:string list) (entity:BsonDocument) (entityType: Type) key =
->>>>>>> 97f2364eed955dc69928279817023da26a667799
                     match xs with 
                     | []  -> ()
                     | y :: ys -> 
@@ -95,7 +90,6 @@ module Bson =
                             |> withKeyValue key id
                             |> removeEntryByKey "_id"
                             |> ignore
-<<<<<<< HEAD
                             continueToNext()
                         // Do not rewrite keys of Maps/Dictionaries
                         |_, (:?BsonDocument as bson) when entityType.Name = "FSharpMap`2" -> 
@@ -110,18 +104,6 @@ module Bson =
                                 rewriteKey (List.ofSeq bson.RawValue.Keys) bson propType propKey
                                 continueToNext()
                         |_,(:?BsonArray as bsonArray)->
-=======
-                            continueToNext()
-                        | _ , (:?BsonDocument as bson) ->
-                            let cEntityType = entityType.GetProperty(y).PropertyType
-                            if FSharpType.IsUnion cEntityType then 
-                               continueToNext()
-                            else
-                                let cKey = getKeyFieldName cEntityType
-                                rewriteKey (List.ofSeq bson.RawValue.Keys) bson cEntityType cKey
-                                continueToNext()
-                        | _, (:?BsonArray as bsonArray) ->
->>>>>>> 97f2364eed955dc69928279817023da26a667799
                             let collectionType = entityType.GetProperty(y).PropertyType
                             let elementType = getCollectionElementType collectionType
                             if  FSharpType.IsRecord elementType then
@@ -135,26 +117,15 @@ module Bson =
                                 continueToNext()
                             else 
                                 continueToNext()
-<<<<<<< HEAD
                         |_ ->continueToNext()
                 
                 let keys = List.ofSeq entity.RawValue.Keys
                 rewriteKey keys entity entityType (getKeyFieldName entityType)
-=======
-                        |_ -> continueToNext()
-                rewriteKey xs entity entityType (getKeyFieldName entityType)
->>>>>>> 97f2364eed955dc69928279817023da26a667799
                 entity
 
             rewriteAllKey entity 
             |> LiteDB.JsonSerializer.Serialize
             |> fun json -> JsonConvert.DeserializeObject(json, entityType, converters)
-<<<<<<< HEAD
-
-=======
-    
-    /// Converts an object to a BsonValue
->>>>>>> 97f2364eed955dc69928279817023da26a667799
     let serializeField(any: obj) : BsonValue = 
         // Entity => Json => Bson
         let json = JsonConvert.SerializeObject(any, Formatting.None, converters);
