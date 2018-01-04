@@ -4,8 +4,6 @@ F# Support for [LiteDB](https://github.com/mbdavid/LiteDB) in .NET Core and full
 
 LiteDB.FSharp provides serialization utilities making it possible for LiteDB to understand F# types such as records, unions, maps etc. 
 
-> The library is experiemental and not production-ready. The Api is subject to change.
-
 ### Usage
 LiteDB.FSharp comes with a custom `BsonMapper` called `FSharpBsonMapper` that you would pass to a `LiteDatabase` instance during initialization:
 
