@@ -7,24 +7,23 @@ open System.Collections.Generic
 
 type FSharpBsonMapper() = 
     inherit BsonMapper()
-    let entityMappers=Dictionary<Type,EntityMapper>() 
+    let entityMappers = Dictionary<Type,EntityMapper>() 
     override self.ToObject(entityType: System.Type, entity: BsonDocument) = Bson.deserializeByType entity entityType 
     override self.ToObject<'t>(entity: BsonDocument) = Bson.deserialize<'t> entity
     override self.ToDocument<'t>(entity: 't) = 
         //Add DBRef Feature :set field value with $ref  
         let withEntityMap (doc:BsonDocument)=
-            let t=entityMappers.Item (entity.GetType())
-            t.Members
-            |>Seq.iter(fun m->
-                if not(isNull m.Serialize) then
-                    let value=m.Getter.Invoke(entity)
-                    doc.RawValue.[m.FieldName]<-m.Serialize.Invoke(value,self)
-            )
+            let mapper = entityMappers.Item (entity.GetType())
+            for memberMapper in mapper.Members do
+                if not (isNull memberMapper.Serialize) then  
+                    let value = memberMapper.Getter.Invoke(entity)
+                    let serialized = memberMapper.Serialize.Invoke(value, self)
+                    doc.RawValue.[memberMapper.FieldName] <- serialized
             doc
         Bson.serialize<'t> entity
-        |>withEntityMap 
+        |> withEntityMap 
         
     override self.BuildEntityMapper(entityType)=
-        let v=base.BuildEntityMapper(entityType)
-        entityMappers.Add(entityType,v)
-        v
+        let mapper = base.BuildEntityMapper(entityType)
+        entityMappers.Add(entityType, mapper)
+        mapper
