@@ -79,53 +79,52 @@ module Bson =
                                | None -> "Id"
               else "Id"
                  
-            let rewriteAllKey (entity:BsonDocument)=    
+            let rewriteIdentityKeys (entity:BsonDocument)=    
                 
-                let rec rewriteKey (xs:string list) (entity:BsonDocument) (entityType: Type) key=
-                    match xs with 
+                let rec rewriteKey (keys:string list) (entity:BsonDocument) (entityType: Type) key =
+                    match keys with 
                     | []  -> ()
                     | y :: ys -> 
                         let continueToNext() = rewriteKey ys entity entityType key 
                         match y, entity.RawValue.[y] with 
+                        // during deserialization, turn key-prop _id back into original Id or id
                         | "_id", id ->
                             entity
                             |> withKeyValue key id
                             |> removeEntryByKey "_id"
-                            |> ignore
-                            continueToNext()
-                        // Do not rewrite keys of Maps/Dictionaries
-                        |_, (:?BsonDocument as bson) when entityType.Name = "FSharpMap`2" -> 
-                            continueToNext()
-                        |_,(:?BsonDocument as bson) ->
-                            if FSharpType.IsUnion entityType then continueToNext()
+                            |> (ignore >> continueToNext)
+                        
+                        |_, (:? BsonDocument as bson) ->
+                            // if property is nested record that resulted from DbRef then
+                            // also re-write the transformed _id key property back to original Id or id
                             let propType = entityType.GetProperty(y).PropertyType
-                            if FSharpType.IsUnion propType then 
-                               continueToNext()
-                            else
-                                let propKey = getKeyFieldName propType
-                                rewriteKey (List.ofSeq bson.RawValue.Keys) bson propType propKey
-                                continueToNext()
-                        |_,(:?BsonArray as bsonArray)->
+                            if FSharpType.IsRecord propType    
+                            then rewriteKey (List.ofSeq bson.RawValue.Keys) bson propType (getKeyFieldName propType)
+                            continueToNext()
+
+                        |_, (:? BsonArray as bsonArray) ->
+                            // if property is BsonArray then loop through each element
+                            // and if that element is a record, then re-write _id back to original
                             let collectionType = entityType.GetProperty(y).PropertyType
                             let elementType = getCollectionElementType collectionType
-                            if  FSharpType.IsRecord elementType then
-                                let cKey = getKeyFieldName elementType
-                                bsonArray
-                                |> Seq.iter(fun bson-> 
-                                      match bson with 
-                                      | :? BsonDocument as bson->
-                                         rewriteKey (List.ofSeq bson.RawValue.Keys) bson elementType cKey
-                                      | _ -> ())
-                                continueToNext()
-                            else 
-                                continueToNext()
-                        |_ ->continueToNext()
+                            if FSharpType.IsRecord elementType then
+                                let docKey = getKeyFieldName elementType
+                                for bson in bsonArray do
+                                    if bson.IsDocument 
+                                    then
+                                      let doc = bson.AsDocument
+                                      let keys = List.ofSeq doc.RawValue.Keys
+                                      rewriteKey keys doc elementType docKey
+                            
+                            continueToNext()
+                        |_ -> 
+                            continueToNext()
                 
                 let keys = List.ofSeq entity.RawValue.Keys
                 rewriteKey keys entity entityType (getKeyFieldName entityType)
                 entity
 
-            rewriteAllKey entity 
+            rewriteIdentityKeys entity 
             |> LiteDB.JsonSerializer.Serialize
             |> fun json -> JsonConvert.DeserializeObject(json, entityType, converters)
     let serializeField(any: obj) : BsonValue = 
