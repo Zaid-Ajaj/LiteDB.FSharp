@@ -63,11 +63,13 @@ module Bson =
             //Just See DbRef NestedId Test
             //The Code is dirty - -!
             let getCollectionElementType (collectionType:Type)=
-                if collectionType.Name = "FSharpList`1" then 
+                let typeNames = ["FSharpList`1";"IEnumerable`1";"List`";"IList`1"]
+                let typeName = collectionType.Name
+                if List.contains typeName typeNames then
                     collectionType.GetGenericArguments().[0]
                 else if collectionType.IsArray then
                     collectionType.GetElementType()
-                else failwith "getCollectionElementType Error"            
+                else failwithf "Could not extract element type from collection of type %s"  collectionType.FullName           
             
             let getKeyFieldName (entityType: Type)= 
               if FSharpType.IsRecord entityType 
