@@ -8,7 +8,7 @@ open System.IO
 let cwd = __SOURCE_DIRECTORY__
 let dotnet = "dotnet"
 let projectPath = cwd </> "LiteDB.FSharp"
-
+let testsPath = cwd </> "LiteDB.FSharp.Tests"
 
 let run workingDir fileName args =
     printfn "CWD: %s" workingDir
@@ -25,13 +25,14 @@ let run workingDir fileName args =
         failwithf "'%s> %s %s' task failed" workingDir fileName args
 
 Target "RunTests" <| fun () ->
-    let testProjectPath = cwd </> "LiteDB.FSharp.Tests"
     "run LiteDB.FSharp.Tests.fsproj"
-    |> run testProjectPath dotnet
+    |> run testsPath dotnet
 
 Target "Clean" <| fun () -> 
-    CleanDir (cwd </> projectPath </> "bin")
-    CleanDir (cwd </> projectPath </> "obj")
+    CleanDir (projectPath </> "bin")
+    CleanDir (projectPath </> "obj")
+    CleanDir (testsPath </> "bin")
+    CleanDir (testsPath </> "obj")
 
 Target "Build" <| fun () ->
     "build -c Release LiteDB.FSharp.fsproj"
@@ -52,5 +53,9 @@ Target "PublishNuget" <| fun () ->
 "Clean"
    ==> "Build" 
    ==> "PublishNuget" 
+
+
+"Clean"
+   ==> "RunTests"
 
 RunTargetOrDefault "RunTests"

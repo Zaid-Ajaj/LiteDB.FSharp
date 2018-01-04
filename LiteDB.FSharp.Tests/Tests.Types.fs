@@ -22,6 +22,10 @@ type Shape =
     | Rect of float * float
     | Composite of Shape list
 
+
+type Value = Num of int | String of string
+type RecordWithMapDU = { Id: int; Properties: Map<string, Value> }
+
 type RecordWithShape = { Id: int; Shape: Shape }
 
 type ComplexUnion<'t> = 

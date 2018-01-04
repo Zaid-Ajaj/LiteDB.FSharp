@@ -75,8 +75,8 @@ module Bson =
                                | None -> "Id"
               else "Id"   
             let rewriteAllKey (entity:BsonDocument)=    
-                let xs=entity.RawValue.Keys|>List.ofSeq
-                let rec rewriteKey (xs:string list)  (entity:BsonDocument) (entityType: Type) key=
+                
+                let rec rewriteKey (xs:string list) (entity:BsonDocument) (entityType: Type) key=
                     match xs with 
                     |[]  -> ()
                     |y::ys -> 
@@ -84,21 +84,25 @@ module Bson =
                         match y,entity.RawValue.[y] with 
                         |"_id",id->
                             entity
-                            |>withKeyValue key id
-                            |>removeEntryByKey "_id"
-                            |>ignore
+                            |> withKeyValue key id
+                            |> removeEntryByKey "_id"
+                            |> ignore
+                            continueToNext()
+                        // Do not rewrite keys of Maps/Dictionaries
+                        |_, (:?BsonDocument as bson) when entityType.Name = "FSharpMap`2" -> 
                             continueToNext()
                         |_,(:?BsonDocument as bson) ->
-                            let cEntityType=entityType.GetProperty(y).PropertyType
-                            if FSharpType.IsUnion cEntityType then 
+                            if FSharpType.IsUnion entityType then continueToNext()
+                            let propType = entityType.GetProperty(y).PropertyType
+                            if FSharpType.IsUnion propType then 
                                continueToNext()
                             else
-                                let cKey=getKeyFieldName cEntityType
-                                rewriteKey (bson.RawValue.Keys|>List.ofSeq) bson cEntityType cKey
+                                let propKey = getKeyFieldName propType
+                                rewriteKey (List.ofSeq bson.RawValue.Keys) bson propType propKey
                                 continueToNext()
                         |_,(:?BsonArray as bsonArray)->
-                            let collectionType=entityType.GetProperty(y).PropertyType
-                            let elementType=getCollectionElementType collectionType
+                            let collectionType = entityType.GetProperty(y).PropertyType
+                            let elementType = getCollectionElementType collectionType
                             if  FSharpType.IsRecord elementType then
                                 let cKey=getKeyFieldName elementType
                                 bsonArray
@@ -111,12 +115,14 @@ module Bson =
                             else 
                                 continueToNext()
                         |_ ->continueToNext()
-                rewriteKey xs entity entityType (getKeyFieldName entityType)
+                
+                let keys = List.ofSeq entity.RawValue.Keys
+                rewriteKey keys entity entityType (getKeyFieldName entityType)
                 entity
 
             rewriteAllKey entity 
-            |>LiteDB.JsonSerializer.Serialize
-            |>fun json -> JsonConvert.DeserializeObject(json, entityType, converters)
+            |> LiteDB.JsonSerializer.Serialize
+            |> fun json -> JsonConvert.DeserializeObject(json, entityType, converters)
 
     let serializeField(any: obj) : BsonValue = 
         // Entity => Json => Bson

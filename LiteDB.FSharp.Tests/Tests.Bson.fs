@@ -50,6 +50,19 @@ let bsonConversions =
       | { id = 1; number = 20.0M } -> pass()
       | otherwise -> fail()
 
+    testCase "Records with maps containing DU's" <| fun _ ->
+      let properties : Map<string, Value> = 
+        [ "age", Num 20; "firstName", Value.String "John"]
+        |> Map.ofList
+
+      let record : RecordWithMapDU = { Id = 1; Properties = properties }
+
+      let doc = Bson.serialize record
+
+      match Bson.deserialize<RecordWithMapDU> doc with
+      | record' when record' = record -> pass()
+      | otherwise -> fail()
+
 
     testCase "records with guid" <| fun _ ->
       let guidValue = Guid.NewGuid()
