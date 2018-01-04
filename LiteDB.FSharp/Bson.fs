@@ -39,6 +39,7 @@ module Bson =
 
     let private fsharpJsonConverter = FSharpJsonConverter()
     let private converters : JsonConverter[] = [| fsharpJsonConverter |]
+    
     /// Converts a typed entity (normally an F# record) to a BsonDocument. 
     /// Assuming there exists a field called `Id` or `id` of the record that will be mapped to `_id` in the BsonDocument, otherwise an exception is thrown.
     let serialize<'t> (entity: 't) = 
@@ -53,7 +54,7 @@ module Bson =
              |> withKeyValue "_id" (read key doc) 
              |> removeEntryByKey key
           | None -> 
-              let error = sprintf "Exected type %s to have a unique identifier property of 'Id' (exact name)" typeName
+              let error = sprintf "Exected type %s to have a unique identifier property of 'Id' or 'id' (exact name)" typeName
               failwith error
 
     /// Converts a BsonDocument to a typed entity given the document the type of the CLR entity.
@@ -67,26 +68,34 @@ module Bson =
                 else if collectionType.IsArray then
                     collectionType.GetElementType()
                 else failwith "getCollectionElementType Error"            
+            
             let getKeyFieldName (entityType: Type)= 
               if FSharpType.IsRecord entityType 
               then FSharpType.GetRecordFields entityType 
                    |> Seq.tryFind (fun field -> field.Name = "Id" || field.Name = "id")
                    |> function | Some field -> field.Name
                                | None -> "Id"
-              else "Id"   
+              else "Id"
+                 
             let rewriteAllKey (entity:BsonDocument)=    
+<<<<<<< HEAD
                 
                 let rec rewriteKey (xs:string list) (entity:BsonDocument) (entityType: Type) key=
+=======
+                let xs = List.ofSeq entity.RawValue.Keys 
+                let rec rewriteKey (xs:string list) (entity:BsonDocument) (entityType: Type) key =
+>>>>>>> 97f2364eed955dc69928279817023da26a667799
                     match xs with 
-                    |[]  -> ()
-                    |y::ys -> 
-                        let continueToNext()= rewriteKey ys entity entityType key 
-                        match y,entity.RawValue.[y] with 
-                        |"_id",id->
+                    | []  -> ()
+                    | y :: ys -> 
+                        let continueToNext() = rewriteKey ys entity entityType key 
+                        match y, entity.RawValue.[y] with 
+                        | "_id", id ->
                             entity
                             |> withKeyValue key id
                             |> removeEntryByKey "_id"
                             |> ignore
+<<<<<<< HEAD
                             continueToNext()
                         // Do not rewrite keys of Maps/Dictionaries
                         |_, (:?BsonDocument as bson) when entityType.Name = "FSharpMap`2" -> 
@@ -101,29 +110,51 @@ module Bson =
                                 rewriteKey (List.ofSeq bson.RawValue.Keys) bson propType propKey
                                 continueToNext()
                         |_,(:?BsonArray as bsonArray)->
+=======
+                            continueToNext()
+                        | _ , (:?BsonDocument as bson) ->
+                            let cEntityType = entityType.GetProperty(y).PropertyType
+                            if FSharpType.IsUnion cEntityType then 
+                               continueToNext()
+                            else
+                                let cKey = getKeyFieldName cEntityType
+                                rewriteKey (List.ofSeq bson.RawValue.Keys) bson cEntityType cKey
+                                continueToNext()
+                        | _, (:?BsonArray as bsonArray) ->
+>>>>>>> 97f2364eed955dc69928279817023da26a667799
                             let collectionType = entityType.GetProperty(y).PropertyType
                             let elementType = getCollectionElementType collectionType
                             if  FSharpType.IsRecord elementType then
-                                let cKey=getKeyFieldName elementType
+                                let cKey = getKeyFieldName elementType
                                 bsonArray
-                                |>Seq.iter(fun bson-> 
+                                |> Seq.iter(fun bson-> 
                                       match bson with 
-                                      | :?BsonDocument as bson->
-                                         rewriteKey (bson.RawValue.Keys|>List.ofSeq) bson elementType cKey
+                                      | :? BsonDocument as bson->
+                                         rewriteKey (List.ofSeq bson.RawValue.Keys) bson elementType cKey
                                       | _ -> ())
                                 continueToNext()
                             else 
                                 continueToNext()
+<<<<<<< HEAD
                         |_ ->continueToNext()
                 
                 let keys = List.ofSeq entity.RawValue.Keys
                 rewriteKey keys entity entityType (getKeyFieldName entityType)
+=======
+                        |_ -> continueToNext()
+                rewriteKey xs entity entityType (getKeyFieldName entityType)
+>>>>>>> 97f2364eed955dc69928279817023da26a667799
                 entity
 
             rewriteAllKey entity 
             |> LiteDB.JsonSerializer.Serialize
             |> fun json -> JsonConvert.DeserializeObject(json, entityType, converters)
+<<<<<<< HEAD
 
+=======
+    
+    /// Converts an object to a BsonValue
+>>>>>>> 97f2364eed955dc69928279817023da26a667799
     let serializeField(any: obj) : BsonValue = 
         // Entity => Json => Bson
         let json = JsonConvert.SerializeObject(any, Formatting.None, converters);
@@ -139,6 +170,7 @@ module Bson =
         // Json to 't
         |> fun json -> JsonConvert.DeserializeObject(json, typeInfo, converters)
         |> unbox<'t>
+        
     /// Converts a BsonDocument to a typed entity given the document the type of the CLR entity.
     let deserialize<'t>(entity: BsonDocument) = 
         let typeInfo = typeof<'t>

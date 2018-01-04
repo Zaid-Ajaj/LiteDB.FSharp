@@ -1,4 +1,5 @@
 namespace LiteDB.FSharp
+
 open System.Linq.Expressions
 open System
 open Microsoft.FSharp.Linq.RuntimeHelpers

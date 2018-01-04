@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2010
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "LiteDB.FSharp", "LiteDB.FSharp\LiteDB.FSharp.fsproj", "{9A8AA256-B139-4AEA-9CEF-460BA8045617}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "LiteDB.FSharp.Tests", "LiteDB.FSharp.Tests\LiteDB.FSharp.Tests.fsproj", "{AD38A1E8-B7E8-4E50-AFEF-E293E19558D2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9A8AA256-B139-4AEA-9CEF-460BA8045617}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A8AA256-B139-4AEA-9CEF-460BA8045617}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A8AA256-B139-4AEA-9CEF-460BA8045617}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A8AA256-B139-4AEA-9CEF-460BA8045617}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD38A1E8-B7E8-4E50-AFEF-E293E19558D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD38A1E8-B7E8-4E50-AFEF-E293E19558D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD38A1E8-B7E8-4E50-AFEF-E293E19558D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD38A1E8-B7E8-4E50-AFEF-E293E19558D2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C58409B5-3F75-45F9-B586-A000C288F8D0}
+	EndGlobalSection
+EndGlobal
