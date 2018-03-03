@@ -71,6 +71,19 @@ let liteDatabaseUsage =
                 |> function | 1 -> pass()
                             | n -> fail()
 
+        testCase "TryFind extension method works" <| fun _ ->
+            useDatabase <| fun db ->
+               let people = db.GetCollection<PersonDocument>("people")
+               let time = DateTime(2017, 10, 15)
+               let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+               people.Insert(person) |> ignore 
+               match people.TryFind(Query.EQ("Name", BsonValue("Mike"))) with
+               | Some insertedPerson when insertedPerson = person ->
+                    match people.TryFind(Query.EQ("Name", BsonValue("John"))) with
+                    | None -> pass()
+                    | otherwise -> fail()
+               | otherwise -> fail()
+
         testCase "Search by Exact Name works" <| fun _ ->
             useDatabase <| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")

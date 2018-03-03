@@ -10,3 +10,10 @@ module Extensions =
             match box result with
             | null -> None
             | _ -> Some result
+
+        /// Tries to find a document using the given query
+        member collection.TryFind (query: Query) = 
+            let skipped = 0
+            let limit = 1
+            collection.Find(query, skipped, limit)
+            |> Seq.tryHead
