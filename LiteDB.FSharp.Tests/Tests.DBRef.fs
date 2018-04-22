@@ -7,12 +7,15 @@ open LiteDB
 open LiteDB.FSharp
 open Tests.Types
 open LiteDB.FSharp.Linq
+open LiteDB.FSharp.Extensions
 
+let pass() = Expect.isTrue true "passed"
+let fail() = Expect.isTrue false "failed"
 
 let useDatabase (f: LiteRepository -> unit) = 
     let mapper = FSharpBsonMapper()
-    mapper.Entity<Order>().DbRef(convertExpr <@ fun c -> c.Company @> ) |> ignore
-    mapper.Entity<Order>().DbRef(convertExpr <@ fun c -> c.EOrders @> ) |> ignore
+    mapper.DbRef<Order,_>(fun c -> c.Company)
+    mapper.DbRef<Order,_>(fun c -> c.EOrders)
     use memoryStream = new MemoryStream()
     use db = new LiteRepository(memoryStream, mapper)
     f db  
@@ -22,18 +25,27 @@ let dbRefTests =
   
     testCase "CLIType DBRef Token Test" <| fun _ -> 
       useDatabase <| fun db ->
-        let company = { Id = 1; Name = "test"}  
+        let company = { Id = 1; Name = "InitializedCompanyName"}  
         let order = { Id = 1; Company = company; EOrders = []}
-        db.Insert(company)
-        db.Insert(order)
-        db.Update({ Id = 1; Name = "Hello" }) |> ignore
-        let m = db.Query<Order>().Include(convertExpr <@ fun c -> c.Company @>).FirstOrDefault()
-        Expect.equal m.Company.Name  "Hello" "CLIType DBRef Token Test Corrently"
+        db 
+        |> LiteRepository.insertItem company
+        |> LiteRepository.insertItem order
+        |> LiteRepository.updateItem<Company> { Id = 1; Name = "UpdatedCompanyName" }
+        |> LiteRepository.query<Order> 
+        |> LiteQueryable.``include`` (Expr.prop (fun o -> o.Company))
+        |> LiteQueryable.first
+        |> function
+            | { Id = 1; 
+               Company = {Id = 1; Name = "UpdatedCompanyName"}; 
+               EOrders = []} -> pass()
+            | _ -> fail()            
+       
+        
     
     
     testCase "CLIType DBRef NestedId token Test" <| fun _ -> 
       useDatabase <| fun db ->
-        let company = {Id = 1; Name = "test"}  
+        let company = {Id = 1; Name = "InitializedCompanyName"}  
         let order = { Id = 1; Company = company; EOrders = []}
         db.Insert(company)
         db.Insert(order)
