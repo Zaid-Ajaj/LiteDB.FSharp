@@ -53,7 +53,11 @@ module Extensions =
         ///Include DBRef field in result query execution
         static member ``include`` (exp: Expression<Func<'a,'b>>) (query: LiteQueryable<'a>) =
             query.Include(exp)
-
+       
+       ///Include DBRef field in result query execution
+        static member expand (exp: Expression<Func<'a,'b>>) (query: LiteQueryable<'a>) =
+            query.Include(exp)
+       
         static member first (query: LiteQueryable<'a>) =
             query.First()
 
@@ -63,4 +67,7 @@ module Extensions =
         ///Add new Query filter when query will be executed. This filter use database index
         static member where (exp: Expression<Func<'a,bool>>) (query: LiteQueryable<'a>) =
             query.Where exp
+
+        static member find (exp: Expression<Func<'a,bool>>) (query: LiteQueryable<'a>) =
+            query |> LiteQueryable.where exp |> LiteQueryable.first
 

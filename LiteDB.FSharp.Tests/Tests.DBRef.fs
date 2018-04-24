@@ -32,7 +32,7 @@ let dbRefTests =
         |> LiteRepository.insertItem order
         |> LiteRepository.updateItem<Company> { Id = 1; Name = "UpdatedCompanyName" }
         |> LiteRepository.query<Order> 
-        |> LiteQueryable.``include`` (Expr.prop (fun o -> o.Company))
+        |> LiteQueryable.expand (Expr.prop (fun o -> o.Company))
         |> LiteQueryable.first
         |> function
             | { Id = 1; 
