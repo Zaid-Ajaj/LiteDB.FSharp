@@ -3,11 +3,14 @@ namespace LiteDB.FSharp
 open LiteDB
 open System
 open System.Collections.Generic
+open System.Linq.Expressions
 
 
 type FSharpBsonMapper() = 
     inherit BsonMapper()
     let entityMappers = Dictionary<Type,EntityMapper>() 
+    member this.DbRef<'T1,'T2> (exp: Expression<Func<'T1,'T2>>) =
+        this.Entity<'T1>().DbRef(exp) |> ignore
     override self.ToObject(entityType: System.Type, entity: BsonDocument) = Bson.deserializeByType entity entityType 
     override self.ToObject<'t>(entity: BsonDocument) = Bson.deserialize<'t> entity
     override self.ToDocument<'t>(entity: 't) = 

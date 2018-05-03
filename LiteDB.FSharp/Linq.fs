@@ -11,3 +11,7 @@ module Linq =
       let call = linq :?> MethodCallExpression
       let lambda = call.Arguments.[0] :?> LambdaExpression
       Expression.Lambda<Func<'a, 'b>>(lambda.Body, lambda.Parameters) 
+      
+    [<RequireQualifiedAccess>]
+    type Expr =
+        static member prop(exp:Expression<Func<'T,'a>>) = exp    
