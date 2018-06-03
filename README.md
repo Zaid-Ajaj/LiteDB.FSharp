@@ -90,7 +90,7 @@ let albumsLastYear = albums.Find(query)
 let filtered = 
     albums.fullSearch 
         <@ fun album -> album.DateReleased @> 
-        (fun dateReleased -> dateReleased.Year % 5)
+        (fun dateReleased -> dateReleased.Year % 5 = 0)
 ```
 
 ### Customized Full Search using Query.Where
