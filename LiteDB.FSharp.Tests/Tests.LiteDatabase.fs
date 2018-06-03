@@ -19,6 +19,8 @@ type PersonDocument = {
     Status: MaritalStatus
 }
 
+type RecordWithBoolean = { Id: int; HasValue: bool }
+
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
@@ -30,13 +32,27 @@ let useDatabase (f: LiteDatabase -> unit) =
 
 let liteDatabaseUsage = 
     testList "LiteDatabase usage" [
-        testCase "Inserting and FindById works" <| fun _ ->
+        testCase "Inserting and FindById work" <| fun _ ->
             useDatabase <| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; DateAdded = time; Status = Single }
                 people.Insert(person) |> ignore
                 let p = people.FindById(BsonValue(1))
+                match p with
+                | { Id = 1; Name = "Mike"; Age = 10; Status = Single; DateAdded = x } ->
+                    Expect.equal 2017 x.Year "Year is mapped correctly"
+                    Expect.equal 10 x.Month "Month is mapped correctly"
+                    Expect.equal 15 x.Day "Day is mapped correctly"
+                | otherwise -> fail()
+
+        testCase "Inserting and findOne with quoted expressions work" <| fun _ ->
+            useDatabase <| fun db ->
+                let people = db.GetCollection<PersonDocument>("people")
+                let time = DateTime(2017, 10, 15)
+                let person = { Id = 1; Name = "Mike"; Age = 10; DateAdded = time; Status = Single }
+                people.Insert(person) |> ignore
+                let p = people.findOne <@ fun person -> person.Id = 1 @>
                 match p with
                 | { Id = 1; Name = "Mike"; Age = 10; Status = Single; DateAdded = x } ->
                     Expect.equal 2017 x.Year "Year is mapped correctly"
@@ -71,6 +87,17 @@ let liteDatabaseUsage =
                 |> function | 1 -> pass()
                             | n -> fail()
 
+        testCase "Search by compound query expression works" <| fun _ ->
+            useDatabase <| fun db ->
+                let people = db.GetCollection<PersonDocument>("people")
+                let time = DateTime(2017, 10, 15)
+                let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+                people.Insert(person) |> ignore
+                people.findMany <@ fun person -> person.Age > 5 && person.Age < 15 @> 
+                |> Seq.length 
+                |> function | 1 -> pass()
+                            | n -> fail()
+
         testCase "TryFind extension method works" <| fun _ ->
             useDatabase <| fun db ->
                let people = db.GetCollection<PersonDocument>("people")
@@ -80,6 +107,19 @@ let liteDatabaseUsage =
                match people.TryFind(Query.EQ("Name", BsonValue("Mike"))) with
                | Some insertedPerson when insertedPerson = person ->
                     match people.TryFind(Query.EQ("Name", BsonValue("John"))) with
+                    | None -> pass()
+                    | otherwise -> fail()
+               | otherwise -> fail()
+
+        testCase "tryFindOne works" <| fun _ ->
+            useDatabase <| fun db ->
+               let people = db.GetCollection<PersonDocument>("people")
+               let time = DateTime(2017, 10, 15)
+               let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+               people.Insert(person) |> ignore 
+               match people.tryFindOne <@ fun person -> person.Name = "Mike" @> with
+               | Some insertedPerson when insertedPerson = person ->
+                    match people.tryFindOne <@ fun person -> person.Name = "John" @> with
                     | None -> pass()
                     | otherwise -> fail()
                | otherwise -> fail()
@@ -108,6 +148,18 @@ let liteDatabaseUsage =
                 |> function | 1 -> pass()
                             | n -> fail()
 
+        testCase "Search by Exact Age works with expressions" <| fun _ ->
+           useDatabase <| fun db ->
+               let people = db.GetCollection<PersonDocument>("people")
+               let time = DateTime(2017, 10, 15)
+               let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+               people.Insert(person) |> ignore
+               
+               people.findMany <@ fun person -> person.Age = 10 @>
+               |> Seq.length 
+               |> function | 1 -> pass()
+                           | n -> fail()
+
         testCase "Search between time intervals using Query.And" <| fun _ ->
             useDatabase <| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
@@ -119,6 +171,19 @@ let liteDatabaseUsage =
                 let dateTo = DateTime(2018, 01, 01) |> BsonValue
                 let query = Query.And(Query.GT("DateAdded", dateFrom), Query.LT("DateAdded", dateTo))
                 people.Find(query)
+                |> Seq.length 
+                |> function | 1 -> pass()
+                            | n -> fail()
+
+        testCase "Search between time intervals using quoted expressions" <| fun _ ->
+            useDatabase <| fun db ->
+                let people = db.GetCollection<PersonDocument>("people")
+                let time = DateTime(2017, 10, 15)
+                let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+                people.Insert(person) |> ignore
+
+                people.findMany <@ fun person -> person.DateAdded > DateTime(2017, 01, 01) 
+                                              && person.DateAdded < DateTime(2018, 01, 01) @>
                 |> Seq.length 
                 |> function | 1 -> pass()
                             | n -> fail()
@@ -138,6 +203,39 @@ let liteDatabaseUsage =
                 |> function | 1 -> pass()
                             | n -> fail()   
 
+        testCase "Search by using expression on boolean properties" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithBoolean>()
+                values.Insert({ Id = 1; HasValue = true }) |> ignore 
+                let foundItem = values.tryFindOne <@ fun item -> item.HasValue @>  
+                match foundItem with 
+                | Some value -> pass()
+                | None -> fail() 
+
+        testCase "Search by expression OR works" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithBoolean>()
+                values.Insert({ Id = 1; HasValue = true }) |> ignore 
+                values.Insert({ Id = 2; HasValue = false }) |> ignore 
+                
+                values.findMany <@ fun item -> item.Id = 2 || item.HasValue @>
+                |> Seq.length
+                |> function 
+                    | 2 -> pass() 
+                    | _ -> fail()
+
+        testCase "Search by expression OR works with NOT operator" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithBoolean>()
+                values.Insert({ Id = 1; HasValue = true }) |> ignore 
+                values.Insert({ Id = 2; HasValue = false }) |> ignore 
+                
+                values.findMany <@ fun item -> not (item.Id = 2 || item.HasValue) @>
+                |> Seq.length
+                |> function 
+                    | 0 -> pass() 
+                    | _ -> fail()
+
         testCase "Search by discriminated unions works" <| fun _ ->
             useDatabase <| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
@@ -149,7 +247,18 @@ let liteDatabaseUsage =
                 let foundPerson = people.FindOne(query)
                 match foundPerson with
                 | { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time } -> pass()
-                | otherwise -> fail()    
+                | otherwise -> fail()   
+
+        testCase "Search by discriminated unions using expressions" <| fun _ ->
+            useDatabase <| fun db ->
+                let people = db.GetCollection<PersonDocument>("people")
+                let time = DateTime(2017, 10, 15)
+                let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+                people.Insert(person) |> ignore
+                let foundPerson = people.findOne <@ fun person -> person.Status = Married @>
+                match foundPerson with
+                | { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time } -> pass()
+                | otherwise -> fail()  
 
         testCase "Full custom search works by BsonValue deserialization" <| fun _ ->
             useDatabase <| fun db ->
@@ -171,6 +280,31 @@ let liteDatabaseUsage =
                     )
 
                 records.Find(searchQuery)
+                |> Seq.length
+                |> function 
+                    | 1 -> pass()
+                    | n -> fail()
+
+        testCase "Full custom search works by using expressions" <| fun _ ->
+            useDatabase <| fun db ->
+                let records = db.GetCollection<RecordWithShape> "Shapes"                                     
+                let shape = 
+                    Composite [ 
+                      Circle 2.0;
+                      Composite [ Circle 4.0; Rect(2.0, 5.0) ]
+                    ]
+                let record = { Id = 1; Shape = shape }
+                records.Insert(record) |> ignore
+
+                let searchResults = 
+                    records.fullSearch 
+                        <@ fun r -> r.Shape @> 
+                        (fun shape -> 
+                            match shape with 
+                            | Composite [ Circle 2.0; other ] -> true
+                            | otherwise -> false) 
+                
+                searchResults            
                 |> Seq.length
                 |> function 
                     | 1 -> pass()

@@ -2,7 +2,7 @@
 
 F# Support for [LiteDB](https://github.com/mbdavid/LiteDB) in .NET Core and full .NET Framework as well.
 
-LiteDB.FSharp provides serialization utilities making it possible for LiteDB to understand F# types such as records, unions, maps etc. 
+LiteDB.FSharp provides serialization utilities making it possible for LiteDB to understand F# types such as records, unions, maps etc. with support for type-safe query expression through F# quotations
 
 ### Usage
 LiteDB.FSharp comes with a custom `BsonMapper` called `FSharpBsonMapper` that you would pass to a `LiteDatabase` instance during initialization:
@@ -42,13 +42,19 @@ albums.Insert(metallica)
 ```
 ### Query one document by Id
 ```fsharp
+// result : Album
+let result = albums.findOne <@ fun album -> album.Id = 1 @> 
+
+// OR
 let id = BsonValue(1)
 // result : Album
 let result = albums.FindById(id)
 ```
 ### Query many documents depending on the value of a field
 ```fsharp
-// Find all albums where Album["Name"] = "Metallica"
+// metallicaAlbums : Seq<Album>
+let metallicaAlbums = albums.findMany <@ fun album -> album.Name = "Metallica" @>
+// OR
 let name = BsonValue("Metallica")
 let query = Query.EQ("Name", name)
 // metallicaAlbums : Seq<Album>
@@ -57,9 +63,14 @@ let metallicaAlbums = albums.Find(query)
 ### Query documents by value of discriminated union
 ```fsharp
 // find all albums where Genre = Rock
+// rockAlbums : Seq<Album>
+let rockAlbums = albums.findMany <@ fun album -> album.Genre = Rock @>
+
+// OR 
+
 let genre = BsonValue("Rock")
 let query = Query.EQ("Genre", genre)
-// metallicaAlbums : Seq<Album>
+// rockAlbums : Seq<Album>
 let rockAlbums = albums.Find(query)
 ```
 ### Query documents between or time intervals
@@ -72,7 +83,17 @@ let query = Query.Between("DateReleased", dateFrom, dateTo)
 // albumsLastYear : Seq<Album>
 let albumsLastYear = albums.Find(query)
 ```
-### Customized search using Query.Where
+### Customized Full Search using quoted expressions
+```fs
+// Filtering albums released a year divisble by 5
+// filtered : Seq<Album>
+let filtered = 
+    albums.fullSearch 
+        <@ fun album -> album.DateReleased @> 
+        (fun dateReleased -> dateReleased.Year % 5)
+```
+
+### Customized Full Search using Query.Where
 The function `Query.Where` expects a field name and a filter function of type `BsonValue -> bool`. You can deserialize the `BsonValue` using `Bson.deserializeField<'t>` where `'t` is the type of the serialized value. 
 
 ```fsharp
@@ -177,4 +198,3 @@ match companyName with
 | "Hello" -> pass()
 | otherwise -> fail()
 ```
-

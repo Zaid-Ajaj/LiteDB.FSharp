@@ -3,8 +3,13 @@ namespace LiteDB.FSharp
 open LiteDB
 open System.Linq.Expressions
 open System
+open Quotations.Patterns
+open FSharp.Reflection
+open System
 
 module Extensions =
+    open Microsoft.FSharp.Quotations
+
     type LiteCollection<'t> with
         /// Tries to find a document using the Id of the document. 
         member collection.TryFindById(id: BsonValue) = 
@@ -19,7 +24,36 @@ module Extensions =
             let limit = 1
             collection.Find(query, skipped, limit)
             |> Seq.tryHead
-    
+
+        /// Tries to find a single document using a quoted query expression
+        member collection.tryFindOne<'t> (expr: Expr<'t -> bool>) : Option<'t> =
+            let query = Query.createQueryFromExpr expr 
+            collection.TryFind(query)
+
+        /// Tries to find a single document using a quoted query expression, if no document matches, an exception is thrown
+        member collection.findOne<'t> (expr: Expr<'t -> bool>) : 't = 
+            match collection.tryFindOne expr with 
+            | Some item -> item 
+            | None -> failwith "Could not find a single document that matches the given qeury"
+        
+        /// Searches the collection for documents that match the given query expression
+        member collection.findMany<'t> (expr: Expr<'t -> bool>) : seq<'t> = 
+            let query = Query.createQueryFromExpr expr
+            collection.Find(query)
+
+        /// Executes a full search using the Where query 
+        member collection.fullSearch<'t, 'u> (expr: Expr<'t -> 'u>) (pred: 'u -> bool) = 
+            match expr with 
+            | Lambda(_, PropertyGet(_, propInfo, [])) -> 
+                let query = 
+                    Query.Where(propInfo.Name, fun bsonValue -> 
+                        bsonValue
+                        |> Bson.deserializeField<'u> 
+                        |> pred)
+                collection.Find(query) 
+            | _ -> 
+                let expression = sprintf "%A" expr
+                failwithf "Could not recognize the given expression \n%s\n, it should a simple lambda to select a property, for example: <@ fun record -> record.property @>" expression
     
     type LiteRepository with 
         ///Create a new permanent index in all documents inside this collections if index not exists already.
