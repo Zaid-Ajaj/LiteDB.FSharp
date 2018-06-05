@@ -45,8 +45,12 @@ module Extensions =
         member collection.fullSearch<'t, 'u> (expr: Expr<'t -> 'u>) (pred: 'u -> bool) = 
             match expr with 
             | Lambda(_, PropertyGet(_, propInfo, [])) -> 
+                let propName = 
+                    match propInfo.Name with 
+                    | ("Id" | "id" | "ID") -> "_id"
+                    | _ -> propInfo.Name
                 let query = 
-                    Query.Where(propInfo.Name, fun bsonValue -> 
+                    Query.Where(propName, fun bsonValue -> 
                         bsonValue
                         |> Bson.deserializeField<'u> 
                         |> pred)
@@ -54,6 +58,23 @@ module Extensions =
             | _ -> 
                 let expression = sprintf "%A" expr
                 failwithf "Could not recognize the given expression \n%s\n, it should a simple lambda to select a property, for example: <@ fun record -> record.property @>" expression
+        
+        /// Creates a Query for a full search using a selector expression like `<@ fun record -> record.Name @>` and predicate
+        member collection.where<'t, 'u> (expr: Expr<'t -> 'u>) (pred: 'u -> bool) = 
+            match expr with 
+                | Lambda(_, PropertyGet(_, propInfo, [])) -> 
+                    let propName = 
+                        match propInfo.Name with 
+                        | ("Id" | "id" | "ID") -> "_id"
+                        | _ -> propInfo.Name 
+
+                    Query.Where(propName, fun bsonValue -> 
+                        bsonValue
+                        |> Bson.deserializeField<'u> 
+                        |> pred)
+                | _ -> 
+                    let expression = sprintf "%A" expr
+                    failwithf "Could not recognize the given expression \n%s\n, it should a simple lambda to select a property, for example: <@ fun record -> record.property @>" expression
     
     type LiteRepository with 
         ///Create a new permanent index in all documents inside this collections if index not exists already.

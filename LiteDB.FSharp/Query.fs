@@ -7,7 +7,6 @@ open LiteDB
 open Microsoft.FSharp.Reflection
 
 module Query = 
-
     let internal mapper = FSharpBsonMapper()
     let rec createQueryFromExpr<'t> (expr: Expr) : Query = 
         match expr with 

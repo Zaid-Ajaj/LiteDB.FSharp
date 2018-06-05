@@ -69,7 +69,7 @@ module Patterns =
         | NewObjectValue value -> Some value 
         | _ -> None
 
-    let (|Op|_|) (info: MethodInfo) = 
+    let (|LogicOp|_|) (info: MethodInfo) = 
         match info.Name with 
         | "op_Equality" -> Some "="
         | "op_NotEqual" -> Some "<>"
@@ -79,40 +79,40 @@ module Patterns =
         | "op_LessThanOrEqual" -> Some "<=" 
         | otherwise -> None 
 
-    let (|Not|_|) (info: MethodInfo) = 
+    let (|CoreOp|_|) (info: MethodInfo) = 
         match info.DeclaringType.FullName, info.Name with 
         | "Microsoft.FSharp.Core.Operators", "Not" -> Some "not" 
         | _ -> None 
         
     let (|PropertyEqual|_|) = function 
-        | Call(_, Op "=", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) -> 
+        | Call(_, LogicOp "=", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) -> 
             Some (propInfo.Name, value)
         | otherwise -> 
             None
 
     let (|PropertyNotEqual|_|) = function 
-        | Call(_, Op "<>", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
+        | Call(_, LogicOp "<>", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
             Some (propInfo.Name, value) 
         | otherwise -> 
             None
      
     let (|NotProperty|_|) = function 
-        | Call(_, Not "not", [expr]) -> 
+        | Call(_, CoreOp "not", [expr]) -> 
             Some expr  
         | _ -> None 
 
     let (|ProperyGreaterThan|_|) = function 
-       | Call(_, Op ">", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
+       | Call(_, LogicOp ">", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
            Some (propInfo.Name, value)
        | otherwise -> None
 
     let (|ProperyGreaterThanOrEqual|_|) = function 
-       | Call(_, Op ">=", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
+       | Call(_, LogicOp ">=", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
            Some (propInfo.Name, value)
        | otherwise -> None
 
     let (|PropertyLessThan|_|) = function 
-       | Call(_, Op "<", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
+       | Call(_, LogicOp "<", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
            Some (propInfo.Name, value)
        | otherwise -> None
 
@@ -122,7 +122,7 @@ module Patterns =
         | otherwise -> None 
     
     let (|PropertyLessThanOrEqual|_|) = function 
-       | Call(_, Op "<=", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
+       | Call(_, LogicOp "<=", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
            Some (propInfo.Name, value)
        | otherwise -> None
      

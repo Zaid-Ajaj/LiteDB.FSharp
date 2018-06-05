@@ -224,6 +224,32 @@ let liteDatabaseUsage =
                     | 2 -> pass() 
                     | _ -> fail()
 
+        testCase "Search by created where expression" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithBoolean>()
+                values.Insert({ Id = 1; HasValue = true }) |> ignore 
+                values.Insert({ Id = 2; HasValue = false }) |> ignore 
+                
+                let query = values.where <@ fun value -> value.HasValue @> id 
+                values.Find(query)
+                |> Seq.length
+                |> function 
+                    | 1 -> pass() 
+                    | _ -> fail()
+
+        testCase "Search by created where expression and id selector" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithBoolean>()
+                values.Insert({ Id = 1; HasValue = true }) |> ignore 
+                values.Insert({ Id = 2; HasValue = false }) |> ignore 
+                
+                let query = values.where <@ fun value -> value.Id @> (fun id -> id = 1 || id = 2) 
+                values.Find(query)
+                |> Seq.length
+                |> function 
+                    | 2 -> pass() 
+                    | _ -> fail()
+
         testCase "Search by expression OR works with NOT operator" <| fun _ ->
             useDatabase <| fun db ->
                 let values = db.GetCollection<RecordWithBoolean>()
