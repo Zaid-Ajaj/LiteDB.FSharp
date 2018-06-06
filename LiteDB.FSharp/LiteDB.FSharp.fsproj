@@ -1,15 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>F# Support for LiteDB</Description>
+    <Description>Advanced F# Support for LiteDB with query construction through quotation expressions</Description>
     <PackageProjectUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp.git</RepositoryUrl>
     <PackageLicenseUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp/blob/master/LICENSE</PackageLicenseUrl>
     <PackageIconUrl></PackageIconUrl>
     <PackageTags>fsharp;litedb;embedded;database;document-database</PackageTags>
     <Authors>Zaid Ajaj</Authors>
-    <Version>2.1.0</Version>
-    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
+    <Version>2.2.0</Version>
+    <TargetFrameworks>netstandard2.0;net45;net462</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>

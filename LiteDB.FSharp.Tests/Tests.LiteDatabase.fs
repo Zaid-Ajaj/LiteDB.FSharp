@@ -21,6 +21,8 @@ type PersonDocument = {
 
 type RecordWithBoolean = { Id: int; HasValue: bool }
 
+type RecordWithStr = { Id : int; Name: string }
+
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
@@ -159,6 +161,58 @@ let liteDatabaseUsage =
                |> Seq.length 
                |> function | 1 -> pass()
                            | n -> fail()
+
+
+        testCase "String.IsNullOrWhitespace works in query expression" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithStr>()
+                values.Insert({ Id = 1; Name = "" }) |> ignore 
+
+                values.tryFindOne <@ fun value -> String.IsNullOrWhiteSpace value.Name @> 
+                |> function 
+                    | Some { Id = 1; Name = "" } -> pass() 
+                    | _ -> fail()
+
+        testCase "String.IsNullOrEmpty works in query expression" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithStr>()
+                values.Insert({ Id = 1; Name = "" }) |> ignore 
+
+                values.tryFindOne <@ fun value -> String.IsNullOrEmpty value.Name @> 
+                |> function 
+                    | Some { Id = 1; Name = "" } -> pass() 
+                    | _ -> fail()
+
+        testCase "String.Contains works in query expression" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithStr>()
+                values.Insert({ Id = 1; Name = "Friday" }) |> ignore 
+
+                values.tryFindOne <@ fun value -> value.Name.Contains("Fri") @> 
+                |> function 
+                    | Some { Id = 1; Name = "Friday" } -> pass() 
+                    | _ -> fail()
+
+                values.tryFindOne <@ fun value -> value.Name.Contains("Hello") @>
+                |> function
+                    | None -> pass()
+                    | _ -> fail()
+
+        testCase "String.Contains works in conposite query expression" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithStr>()
+                values.Insert({ Id = 1; Name = "Friday" }) |> ignore 
+
+                values.tryFindOne <@ fun value -> value.Name.Contains("Fri") && value.Name.Contains("Hello") @> 
+                |> function 
+                    | None -> pass() 
+                    | _ -> fail()
+
+                values.findMany <@ fun value -> value.Name.Contains("Fri") || value.Name.Contains("Hello")  @>
+                |> Seq.length
+                |> function
+                    | 1 -> pass()
+                    | _ -> fail()                  
 
         testCase "Search between time intervals using Query.And" <| fun _ ->
             useDatabase <| fun db ->

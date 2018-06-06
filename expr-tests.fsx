@@ -12,3 +12,6 @@ find<Record> <@ fun record -> record.Id = value @>
 
 let myId = 10
 find<Record> <@ fun record -> record.Name = "Hello" || record.Id = myId @>
+
+open System
+find<Record> <@ fun record -> record.Name.Contains("OTHER") @>

@@ -18,6 +18,24 @@ module Query =
 
         | Patterns.PropertyEqual (propName, value) when FSharpType.IsRecord (value.GetType()) ->
             Query.EQ(propName, Bson.serializeField value) 
+        
+        | Patterns.StringContains (propName, value) -> 
+            Query.Where(propName, fun bsonValue ->
+                bsonValue
+                |> Bson.deserializeField<string>
+                |> fun strValue -> strValue.Contains(unbox<string> value))
+
+        | Patterns.StringNullOrWhiteSpace propName -> 
+            Query.Where(propName, fun bsonValue -> 
+                bsonValue
+                |> Bson.deserializeField<string>
+                |> String.IsNullOrWhiteSpace)
+
+        | Patterns.StringIsNullOrEmpty propName -> 
+            Query.Where(propName, fun bsonValue -> 
+                bsonValue
+                |> Bson.deserializeField<string>
+                |> String.IsNullOrEmpty)
            
         | Patterns.PropertyEqual (propName, value) -> 
             Query.EQ(propName, BsonValue(value)) 

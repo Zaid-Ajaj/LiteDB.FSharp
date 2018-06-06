@@ -79,6 +79,12 @@ module Patterns =
         | "op_LessThanOrEqual" -> Some "<=" 
         | otherwise -> None 
 
+    let (|StringOp|_|) (info: MethodInfo) = 
+        match info.DeclaringType.FullName ,info.Name with  
+        | "System.String", name -> Some name 
+        | _, _ -> None 
+
+
     let (|CoreOp|_|) (info: MethodInfo) = 
         match info.DeclaringType.FullName, info.Name with 
         | "Microsoft.FSharp.Core.Operators", "Not" -> Some "not" 
@@ -106,6 +112,21 @@ module Patterns =
            Some (propInfo.Name, value)
        | otherwise -> None
 
+    let (|StringNullOrWhiteSpace|_|) = function 
+        | Call(_, StringOp "IsNullOrWhiteSpace", [PropertyGet(_, propInfo, [])]) -> 
+            Some (propInfo.Name) 
+        | otherwise -> None 
+
+    let (|StringIsNullOrEmpty|_|) = function 
+        | Call(_, StringOp "IsNullOrEmpty", [PropertyGet(_, propInfo, [])]) -> 
+            Some (propInfo.Name)
+        | otherwise -> None 
+
+    let (|StringContains|_|) = function 
+        | Call(Some (PropertyGet(_, propInfo, [])), StringOp "Contains",[ProvidedValue(value)]) ->
+            Some (propInfo.Name, value) 
+        | otherwise -> None 
+        
     let (|ProperyGreaterThanOrEqual|_|) = function 
        | Call(_, LogicOp ">=", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
            Some (propInfo.Name, value)
