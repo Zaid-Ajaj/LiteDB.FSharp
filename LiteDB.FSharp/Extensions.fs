@@ -76,6 +76,11 @@ module Extensions =
                     let expression = sprintf "%A" expr
                     failwithf "Could not recognize the given expression \n%s\n, it should a simple lambda to select a property, for example: <@ fun record -> record.property @>" expression
     
+        /// Remove all document based on quoted expression query. Returns removed document counts
+        member collection.delete<'t> (expr: Expr<'t -> bool>) =
+            let query = Query.createQueryFromExpr expr
+            collection.Delete(query)
+
     type LiteRepository with 
         ///Create a new permanent index in all documents inside this collections if index not exists already.
         member this.EnsureIndex<'T1,'T2> (exp: Expression<Func<'T1,'T2>>) =

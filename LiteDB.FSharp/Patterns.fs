@@ -60,6 +60,13 @@ module Patterns =
             Some (box [arg1; arg2; arg3; arg4; arg5])
         | _ -> None
     
+    and (|PropertyGetter|_|) = function 
+        | PropertyGet (Some (ValueWithName(value, valueType, name)), propInfo, []) -> 
+            Some (propInfo.GetValue(value))
+        | PropertyGet (Some (ProvidedValue(value)), propInfo, []) ->
+            Some (propInfo.GetValue(value))
+        | _ -> None
+
     and (| ProvidedValue |_|) = function 
         | Value(value, _ ) -> Some value 
         | ValueWithName(value, _, _) -> Some value
@@ -67,6 +74,7 @@ module Patterns =
         | RecordValue value -> Some value
         | Tuples value -> Some value
         | NewObjectValue value -> Some value 
+        | PropertyGetter value -> Some value
         | _ -> None
 
     let (|LogicOp|_|) (info: MethodInfo) = 

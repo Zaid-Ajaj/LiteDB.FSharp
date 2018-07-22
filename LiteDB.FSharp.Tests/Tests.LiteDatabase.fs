@@ -23,6 +23,8 @@ type RecordWithBoolean = { Id: int; HasValue: bool }
 
 type RecordWithStr = { Id : int; Name: string }
 
+type NestedRecord = { Inner : PersonDocument }
+
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
@@ -96,6 +98,30 @@ let liteDatabaseUsage =
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
                 people.Insert(person) |> ignore
                 people.findMany <@ fun person -> person.Age > 5 && person.Age < 15 @> 
+                |> Seq.length 
+                |> function | 1 -> pass()
+                            | n -> fail()
+
+        testCase "Extracting values from getter works" <| fun _ ->
+            useDatabase <| fun db ->
+                let people = db.GetCollection<PersonDocument>("people")
+                let time = DateTime(2017, 10, 15)
+                let mike = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+                people.Insert(mike) |> ignore
+                people.findMany <@ fun person -> person.Name = mike.Name @> 
+                |> Seq.length 
+                |> function | 1 -> pass()
+                            | n -> fail()
+
+
+        testCase "Extracting values from nested getter works" <| fun _ ->
+            useDatabase <| fun db ->
+                let people = db.GetCollection<PersonDocument>("people")
+                let time = DateTime(2017, 10, 15)
+                let mike = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+                let nestedRecord = { Inner = mike }
+                people.Insert(mike) |> ignore
+                people.findMany <@ fun person -> person.Name = nestedRecord.Inner.Name @> 
                 |> Seq.length 
                 |> function | 1 -> pass()
                             | n -> fail()
