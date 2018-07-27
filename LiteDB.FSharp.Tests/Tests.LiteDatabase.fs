@@ -8,6 +8,7 @@ open LiteDB.FSharp
 open LiteDB.FSharp.Extensions
 
 open Tests.Types
+open Expecto.Logging
 
 type MaritalStatus = Single | Married
 
@@ -24,6 +25,16 @@ type RecordWithBoolean = { Id: int; HasValue: bool }
 type RecordWithStr = { Id : int; Name: string }
 
 type NestedRecord = { Inner : PersonDocument }
+
+type RecordWithOptionalDate = {
+    Id : int
+    Released : Option<DateTime>
+}
+
+type RecOptGuid = {
+    Id: int 
+    OtherId: Option<Guid>
+}
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
@@ -63,6 +74,58 @@ let liteDatabaseUsage =
                     Expect.equal 10 x.Month "Month is mapped correctly"
                     Expect.equal 15 x.Day "Day is mapped correctly"
                 | otherwise -> fail()
+
+        testCase "Documents with optional DateTime = Some can be used" <| fun _ ->
+            useDatabase <| fun db -> 
+                let docs = db.GetCollection<RecordWithOptionalDate>()
+                docs.Insert { Id = 1; Released = Some DateTime.Now } |> ignore 
+                docs.FindAll()
+                |> Seq.tryHead 
+                |> function 
+                    | None -> fail() 
+                    | Some doc -> 
+                        match doc.Id, doc.Released with 
+                        | 1, Some date -> pass()
+                        | _ -> fail() 
+
+        testCase "Documents with optional Guid = Some can be used" <| fun _ ->
+            useDatabase <| fun db -> 
+                let docs = db.GetCollection<RecOptGuid>()
+                docs.Insert { Id = 1; OtherId = Some (Guid.NewGuid()) } |> ignore 
+                docs.FindAll()
+                |> Seq.tryHead 
+                |> function 
+                    | None -> fail() 
+                    | Some doc -> 
+                        match doc.Id, doc.OtherId with 
+                        | 1, Some guid -> pass()
+                        | _ -> fail() 
+
+        testCase "Documents with optional Guid = None can be used" <| fun _ ->
+            useDatabase <| fun db -> 
+                let docs = db.GetCollection<RecOptGuid>()
+                docs.Insert { Id = 1; OtherId = None } |> ignore 
+                docs.FindAll()
+                |> Seq.tryHead 
+                |> function 
+                    | None -> fail() 
+                    | Some doc -> 
+                        match doc.Id, doc.OtherId with 
+                        | 1, None -> pass()
+                        | _ -> fail() 
+
+        testCase "Documents with optional DateTime = None can be used" <| fun _ ->
+            useDatabase <| fun db -> 
+                let docs = db.GetCollection<RecordWithOptionalDate>()
+                docs.Insert { Id = 1; Released = None } |> ignore 
+                docs.FindAll()
+                |> Seq.tryHead 
+                |> function 
+                    | None -> fail() 
+                    | Some doc -> 
+                        match doc.Id, doc.Released with 
+                        | 1, None -> pass()
+                        | _ -> fail() 
 
         testCase "TryFindById extension works" <| fun _ ->
             useDatabase <| fun db ->

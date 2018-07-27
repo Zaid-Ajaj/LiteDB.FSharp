@@ -235,7 +235,23 @@ type FSharpJsonConverter() =
                 if innerType.IsValueType
                 then (typedefof<Nullable<_>>).MakeGenericType([|innerType|])
                 else innerType
-            let value = serializer.Deserialize(reader, innerType)
+            
+            let value = 
+                match reader.TokenType with 
+                | JsonToken.StartObject -> 
+                    advance reader 
+                    let valueName = reader.Value :?> string 
+                    if valueName.StartsWith("$") 
+                    then 
+                        advance reader 
+                        let innerValue = serializer.Deserialize(reader, innerType)
+                        while reader.TokenType <> JsonToken.EndObject do
+                            advance reader 
+                        innerValue
+                    else 
+                        serializer.Deserialize(reader, innerType)
+                | _ -> serializer.Deserialize(reader, innerType)
+
             let cases = FSharpType.GetUnionCases(t)
             if isNull value
             then FSharpValue.MakeUnion(cases.[0], [||])
