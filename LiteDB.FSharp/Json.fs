@@ -80,6 +80,7 @@ type MapSerializer<'k,'v when 'k : comparison>() =
 module private Cache =
     let jsonConverterTypes = ConcurrentDictionary<Type,Kind>()
     let serializationBinderTypes = ConcurrentDictionary<string,Type>()
+    let inheritedConverterTypes = ConcurrentDictionary<string,Type list>()
 
 open Cache
 
@@ -133,7 +134,18 @@ type FSharpJsonConverter() =
                 then
                     Kind.MapOrDictWithNonStringKey
                 else Kind.Other)
-        kind <> Kind.Other
+
+        match kind with 
+        | Kind.Other -> 
+            let fullName = t.FullName
+            inheritedConverterTypes.ContainsKey(fullName) 
+            || inheritedConverterTypes.Values 
+                |> Seq.concat
+                |> Seq.exists (fun inheritedType ->
+                    inheritedType.FullName = fullName
+                )
+
+        | _ -> true
 
     override x.WriteJson(writer, value, serializer) =
         if isNull value
@@ -198,7 +210,41 @@ type FSharpJsonConverter() =
                 let mapSerializeMethod = mapSerializer.GetMethod("Serialize")
                 mapSerializeMethod.Invoke(null, [| value; writer; serializer |]) |> ignore
             | true, _ ->
-                serializer.Serialize(writer, value)
+                match inheritedConverterTypes.TryGetValue(t.FullName) with 
+                | true, _ -> 
+                    serializer.Serialize(writer, value)
+                | false, _ -> 
+                    if inheritedConverterTypes.Values 
+                        |> Seq.concat 
+                        |> Seq.exists (fun inheritedType -> 
+                            inheritedType.FullName = t.FullName
+                        ) 
+                    then
+                        let itName = 
+                            t.GetInterfaces()
+                            |> Seq.tryHead
+                            |> function 
+                                | Some it -> it.FullName
+                                | None -> 
+                                    failwith "ObjectExpression should be spawn by interface"
+
+                        let fieldInfos = value.GetType().GetFields()
+
+                        if fieldInfos.Length = 0 then
+                            serializer.Serialize(writer, itName)
+                        else
+                            writer.WriteStartObject()
+                            writer.WritePropertyName("$itName")
+                            writer.WriteValue(itName)
+                            fieldInfos |> Array.iter (fun fi ->
+                                let field = fi.GetValue(value)
+                                let name = fi.Name
+                                writer.WritePropertyName(name)
+                                serializer.Serialize(writer,field)
+                            )        
+                            writer.WriteEndObject()    
+                    else                    
+                        serializer.Serialize(writer, value)
 
     override x.ReadJson(reader, t, existingValue, serializer) =
         match jsonConverterTypes.TryGetValue(t) with
@@ -290,4 +336,47 @@ type FSharpJsonConverter() =
             let mapDeserializeMethod = mapSerializer.GetMethod("Deserialize")
             mapDeserializeMethod.Invoke(null, [| t; reader; serializer |])
         | true, _ ->
-            serializer.Deserialize(reader, t)
+            match inheritedConverterTypes.TryGetValue(t.FullName) with 
+            | true, inheritedTypes ->
+                let findTypes itName =
+                    let filterTypes =
+                        List.filter (fun (tp: Type) ->
+                            let it = tp.GetInterfaces() |> Seq.head
+                            it.FullName = itName
+                        ) inheritedTypes
+                    filterTypes                    
+                
+                match reader.TokenType with
+                | JsonToken.String ->
+                    let value = serializer.Deserialize(reader, typeof<string>) :?> string
+                    let tp = findTypes value |> Seq.exactlyOne
+                    Activator.CreateInstance(tp)
+                | JsonToken.StartObject ->
+                    let jObject = JObject.Load(reader)
+                    let tp =
+                        let itName = jObject.["$itName"].ToString()
+                        jObject.Remove("$itName") |> ignore                   
+                        let keys = jObject.Properties() |> Seq.map (fun p -> p.Name)
+                        let tps = findTypes itName
+                        tps |> List.find (fun tp ->
+                            let fields = tp.GetFields() |> Seq.map (fun fd -> fd.Name)
+                            Seq.compareWith (fun s1 s2 -> String.Compare(s1,s2)) keys fields
+                            |> function 
+                                | 0 -> true
+                                | _ -> false
+                        )
+                    jObject.ToObject(tp)
+                | _ -> failwith "invalid token"
+
+            | false, _ ->
+                serializer.Deserialize(reader, t)
+
+[<RequireQualifiedAccess>]
+module FSharpJsonConverter =
+    let registerInheritedConverterType<'T1>(t2) =
+        let t1 = typeof<'T1>
+        inheritedConverterTypes.AddOrUpdate(
+            t1.FullName,
+            [t2],
+            (fun _ types -> types @ [t2])
+        ) |> ignore

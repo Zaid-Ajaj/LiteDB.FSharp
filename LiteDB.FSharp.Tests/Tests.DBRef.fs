@@ -55,8 +55,8 @@ let dbRefTests =
     
     testCase "CLIType DBRef with List token Test" <| fun _ -> 
       useDatabase <| fun db->
-        let e1 = {Id = 1; OrderNumRange="test1"}
-        let e2 = {Id = 2; OrderNumRange="test2"}
+        let e1 = {Id = 1; OrderNumRange="test1"; Items = []}
+        let e2 = {Id = 2; OrderNumRange="test2"; Items = []}
         let order =
           { Id = 1
             Company = { Id = 1; Name ="test"} 
@@ -64,15 +64,15 @@ let dbRefTests =
             
         db.Insert<EOrder>([e1;e2]) |> ignore
         db.Insert(order)
-        db.Update({ Id = 1 ; OrderNumRange = "Hello" }) |> ignore
+        db.Update({ Id = 1 ; OrderNumRange = "Hello"; Items = [] }) |> ignore
         let m = db.Query<Order>().Include(convertExpr <@ fun c -> c.EOrders @>).FirstOrDefault()
         Expect.equal m.EOrders.[0].OrderNumRange  "Hello" "CLIType DBRef with List token Test Corrently"
     
     
     testCase "CLIType DBRef with list NestedId token Test" <| fun _ -> 
       useDatabase <| fun db->
-        let e1= {Id=1; OrderNumRange="test1"}
-        let e2= {Id=2; OrderNumRange="test2"}
+        let e1= {Id=1; OrderNumRange="test1"; Items = []}
+        let e2= {Id=2; OrderNumRange="test2"; Items = []}
         let order=
           { Id = 1
             Company ={Id =1; Name ="test"} 
