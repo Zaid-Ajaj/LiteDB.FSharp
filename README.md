@@ -173,28 +173,10 @@ type Company=
 type Order=
   { Id :int
     Company :Company }
-
-let defaultCompany=
-      { Id = 0
-        Name = "test"}  
-let defaultOrder =
-  { Id = 0
-    Company = defaultCompany}
-File.Delete("simple.db")|>ignore
+    
 let mapper = FSharpBsonMapper()
-//Add DbRef Fluently 
-mapper.Entity<Order>().DbRef(convertExpr <@ fun c -> c.Company @>)
-use db = new LiteRepository("simple.db",mapper)
+mapper.DbRef<Order,_>(fun c -> c.Company)
 
-db.Insert(defaultCompany)
-db.Insert(defaultOrder)
-
-// Id auto-incremented So Id is1
-db.Update({ defaultCompany with Name="Hello"; Id = 1 })
-
-let ordersWithCompanies = db.Query<Order>().Include(convertExpr <@ fun c -> c.Company @>)
-let companyName = ordersWithCompanies.FirstOrDefault().Company.Name
-match companyName with 
-| "Hello" -> pass()
-| otherwise -> fail()
 ```
+
+
