@@ -107,6 +107,13 @@ type FSharpJsonConverter() =
         FSharpType.GetUnionCases(t)
         |> Array.find (fun uci -> uci.Name = name)
 
+    let isObjectExpression (tp: Type) =
+        let fullName = tp.FullName
+        inheritedConverterTypes.Values
+                        |> Seq.concat
+                        |> Seq.exists (fun inheritedType ->
+                            inheritedType.FullName = fullName
+                        )
     override x.CanConvert(t) =
         let kind =
             jsonConverterTypes.GetOrAdd(t, fun t ->
@@ -134,18 +141,10 @@ type FSharpJsonConverter() =
                 then
                     Kind.MapOrDictWithNonStringKey
                 else Kind.Other)
-
+        
         match kind with 
-        | Kind.Other -> 
-            let fullName = t.FullName
-            inheritedConverterTypes.ContainsKey(fullName) 
-            || inheritedConverterTypes.Values 
-                |> Seq.concat
-                |> Seq.exists (fun inheritedType ->
-                    inheritedType.FullName = fullName
-                )
-
-        | _ -> true
+        | Kind.Other -> isObjectExpression t
+        | _ -> true       
 
     override x.WriteJson(writer, value, serializer) =
         if isNull value
@@ -209,42 +208,33 @@ type FSharpJsonConverter() =
                 let mapSerializer = typedefof<MapSerializer<_,_>>.MakeGenericType mapTypes
                 let mapSerializeMethod = mapSerializer.GetMethod("Serialize")
                 mapSerializeMethod.Invoke(null, [| value; writer; serializer |]) |> ignore
-            | true, _ ->
-                match inheritedConverterTypes.TryGetValue(t.FullName) with 
-                | true, _ -> 
-                    serializer.Serialize(writer, value)
-                | false, _ -> 
-                    if inheritedConverterTypes.Values 
-                        |> Seq.concat 
-                        |> Seq.exists (fun inheritedType -> 
-                            inheritedType.FullName = t.FullName
-                        ) 
-                    then
-                        let itName = 
-                            t.GetInterfaces()
-                            |> Seq.tryHead
-                            |> function 
-                                | Some it -> it.FullName
-                                | None -> 
-                                    failwith "ObjectExpression should be spawn by interface"
+            | true, Kind.Other when isObjectExpression t ->
+                let interfaceName = 
+                    t.GetInterfaces()
+                    |> Seq.tryHead
+                    |> function 
+                        | Some it -> it.FullName
+                        | None -> 
+                            failwith "ObjectExpression should be spawn from interface"
 
-                        let fieldInfos = value.GetType().GetFields()
-
-                        if fieldInfos.Length = 0 then
-                            serializer.Serialize(writer, itName)
-                        else
-                            writer.WriteStartObject()
-                            writer.WritePropertyName("$itName")
-                            writer.WriteValue(itName)
-                            fieldInfos |> Array.iter (fun fi ->
-                                let field = fi.GetValue(value)
-                                let name = fi.Name
-                                writer.WritePropertyName(name)
-                                serializer.Serialize(writer,field)
-                            )        
-                            writer.WriteEndObject()    
-                    else                    
-                        serializer.Serialize(writer, value)
+                let fieldInfos = value.GetType().GetFields()
+                
+                /// write interface name to json as type info 
+                if fieldInfos.Length = 0 then
+                    serializer.Serialize(writer, interfaceName)
+                else
+                    writer.WriteStartObject()
+                    writer.WritePropertyName("$interfaceName")
+                    writer.WriteValue(interfaceName)
+                    fieldInfos |> Array.iter (fun fi ->
+                        let field = fi.GetValue(value)
+                        let name = fi.Name
+                        writer.WritePropertyName(name)
+                        serializer.Serialize(writer,field)
+                    )        
+                    writer.WriteEndObject()    
+            | true, _ ->                
+                serializer.Serialize(writer, value)
 
     override x.ReadJson(reader, t, existingValue, serializer) =
         match jsonConverterTypes.TryGetValue(t) with
@@ -335,41 +325,40 @@ type FSharpJsonConverter() =
             let mapSerializer = typedefof<MapSerializer<_,_>>.MakeGenericType mapTypes
             let mapDeserializeMethod = mapSerializer.GetMethod("Deserialize")
             mapDeserializeMethod.Invoke(null, [| t; reader; serializer |])
-        | true, _ ->
-            match inheritedConverterTypes.TryGetValue(t.FullName) with 
-            | true, inheritedTypes ->
-                let findTypes itName =
-                    let filterTypes =
-                        List.filter (fun (tp: Type) ->
-                            let it = tp.GetInterfaces() |> Seq.head
-                            it.FullName = itName
-                        ) inheritedTypes
-                    filterTypes                    
-                
-                match reader.TokenType with
-                | JsonToken.String ->
-                    let value = serializer.Deserialize(reader, typeof<string>) :?> string
-                    let tp = findTypes value |> Seq.exactlyOne
-                    Activator.CreateInstance(tp)
-                | JsonToken.StartObject ->
-                    let jObject = JObject.Load(reader)
-                    let tp =
-                        let itName = jObject.["$itName"].ToString()
-                        jObject.Remove("$itName") |> ignore                   
-                        let keys = jObject.Properties() |> Seq.map (fun p -> p.Name)
-                        let tps = findTypes itName
-                        tps |> List.find (fun tp ->
-                            let fields = tp.GetFields() |> Seq.map (fun fd -> fd.Name)
-                            Seq.compareWith (fun s1 s2 -> String.Compare(s1,s2)) keys fields
-                            |> function 
-                                | 0 -> true
-                                | _ -> false
-                        )
-                    jObject.ToObject(tp)
-                | _ -> failwith "invalid token"
+        | true, Kind.Other when isObjectExpression t ->  
+            let inheritedTypes =
+                Seq.concat inheritedConverterTypes.Values
 
-            | false, _ ->
-                serializer.Deserialize(reader, t)
+            let findTypes interfaceName =
+                Seq.filter (fun (tp: Type) ->
+                    let it = tp.GetInterfaces() |> Seq.head
+                    it.FullName = interfaceName
+                ) inheritedTypes
+            
+            match reader.TokenType with
+            | JsonToken.String ->
+                let value = serializer.Deserialize(reader, typeof<string>) :?> string
+                let tp = findTypes value |> Seq.exactlyOne
+                Activator.CreateInstance(tp)
+            | JsonToken.StartObject ->
+                let jObject = JObject.Load(reader)
+                let tp =
+                    let itName = jObject.["$interfaceName"].ToString()
+                    jObject.Remove("$interfaceName") |> ignore                   
+                    let keys = jObject.Properties() |> Seq.map (fun p -> p.Name)
+                    let tps = findTypes itName
+                    tps |> Seq.find (fun tp ->
+                        let fields = tp.GetFields() |> Seq.map (fun fd -> fd.Name)
+                        Seq.compareWith (fun s1 s2 -> String.Compare(s1,s2)) keys fields
+                        |> function 
+                            | 0 -> true
+                            | _ -> false
+                    )
+                jObject.ToObject(tp)
+            | _ -> failwith "invalid token"
+                      
+        | true, _ ->
+            serializer.Deserialize(reader, t)
 
 [<RequireQualifiedAccess>]
 module FSharpJsonConverter =

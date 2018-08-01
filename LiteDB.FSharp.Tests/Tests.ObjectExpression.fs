@@ -31,7 +31,7 @@ let useDatabase (f: LiteRepository -> unit) =
 let objectExpressionTests =
   testList "ObjectExpressionTests Tests" [
   
-    testCase "EOrder with item1" <| fun _ -> 
+    ftestCase "EOrder with item1" <| fun _ -> 
       useDatabase <| fun db ->
         let item1 = 
             { new Item1 with 
@@ -52,10 +52,8 @@ let objectExpressionTests =
         
         match queryedEOrder.Items with 
         | [item] -> 
-            let t = item :? IBarcode
             match item with 
             | :? IBarcode as item1 -> 
-                printfn "%A" item1.Barcode
                 pass()
             | _ -> fail()    
         | _ -> fail()    
