@@ -281,8 +281,11 @@ let item2 =
         member this.Barcode = "7254301" }
 ```
 `item1` and `item2` has some different `Art`
-The generated c# code is 
+The generated c# AST and code is
+
 **item1**:
+![image](https://user-images.githubusercontent.com/25994449/43620744-d2a636a0-9706-11e8-85e5-63867d2bc1dd.png)
+
 ```csharp
 		// Token: 0x0200000A RID: 10
 		[CompilationMapping(6)]
@@ -327,6 +330,7 @@ The generated c# code is
 		}
 ```
 **item2:**
+![image](https://user-images.githubusercontent.com/25994449/43620858-3971e9e2-9707-11e8-87fe-27320624edab.png)
 ```csharp
 		// Token: 0x0200000B RID: 11
 		[CompilationMapping(6)]
@@ -384,7 +388,10 @@ let item1 =
         member this.Number = 1000
         member this.Barcode = "7254301" }
 ```
-The generated C# code is 
+The generated C# AST and code is
+
+![image](https://user-images.githubusercontent.com/25994449/43620955-c0c5b270-9707-11e8-9749-64f89cdacd6f.png)
+
 ```csharp
 		// Token: 0x02000015 RID: 21
 		[Serializable]
@@ -458,7 +465,8 @@ let item1 =
         member this.Barcode = barcode }
 ```
 Only put last evalutated value to object expression then all datas are serialize **corrently**
-The generated c# code is 
+The generated AST and c# code is 
+![image](https://user-images.githubusercontent.com/25994449/43620916-87066e9e-9707-11e8-807c-06f35bcb423d.png)
 ```csharp
 		// Token: 0x0200000A RID: 10
 		[CompilationMapping(6)]
