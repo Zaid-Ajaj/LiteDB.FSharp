@@ -198,3 +198,247 @@ match companyName with
 | "Hello" -> pass()
 | otherwise -> fail()
 ```
+
+## [Object expression](https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/object-expressions)
+### Usage
+```fsharp
+Consider follow codes
+///library.fs
+type IColor =
+    abstract member Color : string 
+
+type IBarcode =
+    abstract member Barcode : string 
+
+type ISize =
+    abstract member Size : int
+
+type IItem = 
+    abstract member Id : int
+    abstract member Name : string
+    abstract member Art : string
+    abstract member Number : int
+
+[<CLIMutable>]    
+type EOrder=
+  { Id: int
+    Items : IItem list
+    OrderNumRange: string } 
+```
+
+```fsharp
+///consumer.fs
+type Item1 =
+    inherit IItem
+    inherit IBarcode
+let item1 = 
+    { new Item1 with 
+        member this.Id = 0
+        member this.Art = "art"
+        member this.Name = "name"
+        member this.Number = 1000
+        member this.Barcode = "7254301" }
+let tp = item1.GetType()
+FSharpJsonConverter.registerInheritedConverterType<IItem>(tp)
+let eorder = { Id = 1; Items = [item1];  OrderNumRange = "" }
+let queryedEOrder =
+    db 
+    |> LiteRepository.insertItem eorder
+    |> LiteRepository.query<EOrder> 
+    |> LiteQueryable.first
+match queryedEOrder.Items with 
+| [item] -> 
+    let t = item :? IBarcode
+    match item with 
+    | :? IBarcode as item1 -> 
+        printfn "%A" item1.Barcode
+        pass()
+    | _ -> fail()    
+| _ -> fail()    
+```
+We serialize `item` as `Item1`
+It means that in `library.fs` we treat it as `IItem` and `IBarcode`
+while in `consumer.fs` we treat it as `Item1`
+
+### Limitations
+*Note:* This is a incompletion feature 
+But sometimes is very *useful* for OO feature: interaction between library and consumer
+**Limitation1:**
+```fsharp
+let item1 = 
+    { new Item1 with 
+        member this.Id = 0
+        member this.Art = "art1"
+        member this.Name = "name"
+        member this.Number = 1000
+        member this.Barcode = "7254301" }
+let item2 = 
+    { new Item1 with 
+        member this.Id = 0
+        member this.Art = "art2"
+        member this.Name = "name"
+        member this.Number = 1000
+        member this.Barcode = "7254301" }
+```
+`item1` and `item2` has some different `Art`
+The generated c# code is 
+**item1**:
+```csharp
+		// Token: 0x0200000A RID: 10
+		[CompilationMapping(6)]
+		[Serializable]
+		[StructLayout(LayoutKind.Auto, CharSet = CharSet.Auto)]
+		internal sealed class item1@64-1 : ObjectExpression.Item1
+		{
+			// Token: 0x06000013 RID: 19 RVA: 0x000022F0 File Offset: 0x000004F0
+			public item1@64-1() : this()
+			{
+			}
+
+			// Token: 0x06000014 RID: 20 RVA: 0x000022FC File Offset: 0x000004FC
+			int Types.IItem.Tests-Types-IItem-get_Id()
+			{
+				return 0;
+			}
+
+			// Token: 0x06000015 RID: 21 RVA: 0x00002300 File Offset: 0x00000500
+			string Types.IItem.Tests-Types-IItem-get_Art()
+			{
+				return "art1";
+			}
+
+			// Token: 0x06000016 RID: 22 RVA: 0x00002308 File Offset: 0x00000508
+			string Types.IItem.Tests-Types-IItem-get_Name()
+			{
+				return "name";
+			}
+
+			// Token: 0x06000017 RID: 23 RVA: 0x00002310 File Offset: 0x00000510
+			int Types.IItem.Tests-Types-IItem-get_Number()
+			{
+				return 1000;
+			}
+
+			// Token: 0x06000018 RID: 24 RVA: 0x00002318 File Offset: 0x00000518
+			string Types.IBarcode.Tests-Types-IBarcode-get_Barcode()
+			{
+				return "7254301";
+			}
+		}
+```
+**item2:**
+```csharp
+		// Token: 0x0200000B RID: 11
+		[CompilationMapping(6)]
+		[Serializable]
+		[StructLayout(LayoutKind.Auto, CharSet = CharSet.Auto)]
+		internal sealed class item2@71 : ObjectExpression.Item1
+		{
+			// Token: 0x06000019 RID: 25 RVA: 0x00002320 File Offset: 0x00000520
+			public item2@71() : this()
+			{
+			}
+
+			// Token: 0x0600001A RID: 26 RVA: 0x0000232C File Offset: 0x0000052C
+			int Types.IItem.Tests-Types-IItem-get_Id()
+			{
+				return 0;
+			}
+
+			// Token: 0x0600001B RID: 27 RVA: 0x00002330 File Offset: 0x00000530
+			string Types.IItem.Tests-Types-IItem-get_Art()
+			{
+				return "art2";
+			}
+
+			// Token: 0x0600001C RID: 28 RVA: 0x00002338 File Offset: 0x00000538
+			string Types.IItem.Tests-Types-IItem-get_Name()
+			{
+				return "name";
+			}
+
+			// Token: 0x0600001D RID: 29 RVA: 0x00002340 File Offset: 0x00000540
+			int Types.IItem.Tests-Types-IItem-get_Number()
+			{
+				return 1000;
+			}
+
+			// Token: 0x0600001E RID: 30 RVA: 0x00002348 File Offset: 0x00000548
+			string Types.IBarcode.Tests-Types-IBarcode-get_Barcode()
+			{
+				return "7254301";
+			}
+		}
+```
+We cannot distinguish serialized data because the `art1`,`art2` are stored in **function** `IItem.Tests-Types-IItem-get_Art` but not **fileds**
+You can also find the some issue in https://github.com/JamesNK/Newtonsoft.Json/issues/1451
+
+**Limitation2**
+```fsharp
+let fields = List.replicate 10000 ["field"]
+let item = 
+    { new Item with 
+        member this.Id = 0
+        member this.Art = fields.[0]
+        member this.Name = "name"
+        member this.Number = 1000
+        member this.Barcode = "7254301" }
+```
+The generated C# code is 
+```csharp
+		// Token: 0x02000015 RID: 21
+		[Serializable]
+		internal sealed class objectExpressionTests@149-9 : FSharpFunc<LiteRepository, Unit>
+		{
+			// Token: 0x06000040 RID: 64 RVA: 0x000026F4 File Offset: 0x000008F4
+			[CompilerGenerated, DebuggerNonUserCode]
+			internal objectExpressionTests@149-9()
+			{
+			}
+
+			// Token: 0x06000041 RID: 65 RVA: 0x000026FC File Offset: 0x000008FC
+			public override Unit Invoke(LiteRepository db)
+			{
+				FSharpList<string> fields = ListModule.Replicate<string>(10000, "field");
+				ObjectExpression.Item2 item = new ObjectExpression.item2@152-3(fields);
+				Type type = item.GetType();
+				FSharpJsonConverterModule.registerInheritedConverterType<Types.IItem>(type);
+				Types.EOrder item2 = new Types.EOrder(1, FSharpList<Types.IItem>.Cons(item, FSharpList<Types.IItem>.get_Empty()), "");
+				Types.EOrder eOrder = Extensions.LiteQueryable.first<Types.EOrder>(Extensions.LiteRepository.query<Types.EOrder>(Extensions.LiteRepository.insertItem<Types.EOrder>(item2, db)));
+				FSharpList<Types.IItem> items@ = eOrder.Items@;
+				if (items@.get_TailOrNull() != null)
+				{
+					FSharpList<Types.IItem> fSharpList = items@;
+					if (fSharpList.get_TailOrNull().get_TailOrNull() == null)
+					{
+						Types.IItem headOrDefault = fSharpList.get_HeadOrDefault();
+						object obj = headOrDefault;
+						bool arg_A7_0;
+						if (obj is Types.IColor)
+						{
+							object obj2 = headOrDefault;
+							arg_A7_0 = (obj2 is Types.ISize);
+						}
+						else
+						{
+							arg_A7_0 = false;
+						}
+						if (arg_A7_0)
+						{
+							ObjectExpression.pass();
+							return null;
+						}
+						ObjectExpression.fail();
+						return null;
+					}
+				}
+				ObjectExpression.fail();
+				return null;
+			}
+		}
+```
+The serialized data contains `let fields = List.replicate 10000 ["field"]
+` 
+It is very large (about 10000 string size)
+
+
