@@ -284,96 +284,13 @@ let item2 =
 The generated c# AST and code is
 
 **item1**:
+
 ![image](https://user-images.githubusercontent.com/25994449/43620744-d2a636a0-9706-11e8-85e5-63867d2bc1dd.png)
 
-```csharp
-		// Token: 0x0200000A RID: 10
-		[CompilationMapping(6)]
-		[Serializable]
-		[StructLayout(LayoutKind.Auto, CharSet = CharSet.Auto)]
-		internal sealed class item1@64-1 : ObjectExpression.Item1
-		{
-			// Token: 0x06000013 RID: 19 RVA: 0x000022F0 File Offset: 0x000004F0
-			public item1@64-1() : this()
-			{
-			}
-
-			// Token: 0x06000014 RID: 20 RVA: 0x000022FC File Offset: 0x000004FC
-			int Types.IItem.Tests-Types-IItem-get_Id()
-			{
-				return 0;
-			}
-
-			// Token: 0x06000015 RID: 21 RVA: 0x00002300 File Offset: 0x00000500
-			string Types.IItem.Tests-Types-IItem-get_Art()
-			{
-				return "art1";
-			}
-
-			// Token: 0x06000016 RID: 22 RVA: 0x00002308 File Offset: 0x00000508
-			string Types.IItem.Tests-Types-IItem-get_Name()
-			{
-				return "name";
-			}
-
-			// Token: 0x06000017 RID: 23 RVA: 0x00002310 File Offset: 0x00000510
-			int Types.IItem.Tests-Types-IItem-get_Number()
-			{
-				return 1000;
-			}
-
-			// Token: 0x06000018 RID: 24 RVA: 0x00002318 File Offset: 0x00000518
-			string Types.IBarcode.Tests-Types-IBarcode-get_Barcode()
-			{
-				return "7254301";
-			}
-		}
-```
 **item2:**
+
 ![image](https://user-images.githubusercontent.com/25994449/43620858-3971e9e2-9707-11e8-87fe-27320624edab.png)
-```csharp
-		// Token: 0x0200000B RID: 11
-		[CompilationMapping(6)]
-		[Serializable]
-		[StructLayout(LayoutKind.Auto, CharSet = CharSet.Auto)]
-		internal sealed class item2@71 : ObjectExpression.Item1
-		{
-			// Token: 0x06000019 RID: 25 RVA: 0x00002320 File Offset: 0x00000520
-			public item2@71() : this()
-			{
-			}
 
-			// Token: 0x0600001A RID: 26 RVA: 0x0000232C File Offset: 0x0000052C
-			int Types.IItem.Tests-Types-IItem-get_Id()
-			{
-				return 0;
-			}
-
-			// Token: 0x0600001B RID: 27 RVA: 0x00002330 File Offset: 0x00000530
-			string Types.IItem.Tests-Types-IItem-get_Art()
-			{
-				return "art2";
-			}
-
-			// Token: 0x0600001C RID: 28 RVA: 0x00002338 File Offset: 0x00000538
-			string Types.IItem.Tests-Types-IItem-get_Name()
-			{
-				return "name";
-			}
-
-			// Token: 0x0600001D RID: 29 RVA: 0x00002340 File Offset: 0x00000540
-			int Types.IItem.Tests-Types-IItem-get_Number()
-			{
-				return 1000;
-			}
-
-			// Token: 0x0600001E RID: 30 RVA: 0x00002348 File Offset: 0x00000548
-			string Types.IBarcode.Tests-Types-IBarcode-get_Barcode()
-			{
-				return "7254301";
-			}
-		}
-```
 We cannot distinguish serialized data because the `art1`,`art2` are stored in **function** `IItem.Tests-Types-IItem-get_Art` but not **fileds**
 You can also find the some issue in https://github.com/JamesNK/Newtonsoft.Json/issues/1451
 
@@ -391,59 +308,6 @@ let item1 =
 The generated C# AST and code is
 
 ![image](https://user-images.githubusercontent.com/25994449/43620955-c0c5b270-9707-11e8-9749-64f89cdacd6f.png)
-
-```csharp
-		// Token: 0x02000015 RID: 21
-		[Serializable]
-		internal sealed class objectExpressionTests@149-9 : FSharpFunc<LiteRepository, Unit>
-		{
-			// Token: 0x06000040 RID: 64 RVA: 0x000026F4 File Offset: 0x000008F4
-			[CompilerGenerated, DebuggerNonUserCode]
-			internal objectExpressionTests@149-9()
-			{
-			}
-
-			// Token: 0x06000041 RID: 65 RVA: 0x000026FC File Offset: 0x000008FC
-			public override Unit Invoke(LiteRepository db)
-			{
-				FSharpList<string> fields = ListModule.Replicate<string>(10000, "field");
-				ObjectExpression.Item2 item = new ObjectExpression.item2@152-3(fields);
-				Type type = item.GetType();
-				FSharpJsonConverterModule.registerInheritedConverterType<Types.IItem>(type);
-				Types.EOrder item2 = new Types.EOrder(1, FSharpList<Types.IItem>.Cons(item, FSharpList<Types.IItem>.get_Empty()), "");
-				Types.EOrder eOrder = Extensions.LiteQueryable.first<Types.EOrder>(Extensions.LiteRepository.query<Types.EOrder>(Extensions.LiteRepository.insertItem<Types.EOrder>(item2, db)));
-				FSharpList<Types.IItem> items@ = eOrder.Items@;
-				if (items@.get_TailOrNull() != null)
-				{
-					FSharpList<Types.IItem> fSharpList = items@;
-					if (fSharpList.get_TailOrNull().get_TailOrNull() == null)
-					{
-						Types.IItem headOrDefault = fSharpList.get_HeadOrDefault();
-						object obj = headOrDefault;
-						bool arg_A7_0;
-						if (obj is Types.IColor)
-						{
-							object obj2 = headOrDefault;
-							arg_A7_0 = (obj2 is Types.ISize);
-						}
-						else
-						{
-							arg_A7_0 = false;
-						}
-						if (arg_A7_0)
-						{
-							ObjectExpression.pass();
-							return null;
-						}
-						ObjectExpression.fail();
-						return null;
-					}
-				}
-				ObjectExpression.fail();
-				return null;
-			}
-		}
-```
 The serialized data contains `let fields = List.replicate 10000 ["field"]
 ` 
 It is very large (about 10000 string size)
@@ -465,62 +329,8 @@ let item1 =
         member this.Barcode = barcode }
 ```
 Only put last evalutated value to object expression then all datas are serialize **corrently**
-The generated AST and c# code is 
+The generated c# AST is
+
 ![image](https://user-images.githubusercontent.com/25994449/43620916-87066e9e-9707-11e8-807c-06f35bcb423d.png)
-```csharp
-		// Token: 0x0200000A RID: 10
-		[CompilationMapping(6)]
-		[Serializable]
-		[StructLayout(LayoutKind.Auto, CharSet = CharSet.Auto)]
-		internal sealed class item1@70-1 : ObjectExpression.Item1
-		{
-			// Token: 0x06000013 RID: 19 RVA: 0x000022F0 File Offset: 0x000004F0
-			public item1@70-1(int id, string art, string name, int number, string barcode) : this()
-			{
-			}
 
-			// Token: 0x06000014 RID: 20 RVA: 0x00002320 File Offset: 0x00000520
-			int Types.IItem.Tests-Types-IItem-get_Id()
-			{
-				return this.id;
-			}
 
-			// Token: 0x06000015 RID: 21 RVA: 0x00002328 File Offset: 0x00000528
-			string Types.IItem.Tests-Types-IItem-get_Art()
-			{
-				return this.art;
-			}
-
-			// Token: 0x06000016 RID: 22 RVA: 0x00002330 File Offset: 0x00000530
-			string Types.IItem.Tests-Types-IItem-get_Name()
-			{
-				return this.name;
-			}
-
-			// Token: 0x06000017 RID: 23 RVA: 0x00002338 File Offset: 0x00000538
-			int Types.IItem.Tests-Types-IItem-get_Number()
-			{
-				return this.number;
-			}
-
-			// Token: 0x06000018 RID: 24 RVA: 0x00002340 File Offset: 0x00000540
-			string Types.IBarcode.Tests-Types-IBarcode-get_Barcode()
-			{
-				return this.barcode;
-			}
-
-			// Token: 0x04000004 RID: 4
-			public int id = id;
-
-			// Token: 0x04000005 RID: 5
-			public string art = art;
-
-			// Token: 0x04000006 RID: 6
-			public string name = name;
-
-			// Token: 0x04000007 RID: 7
-			public int number = number;
-
-			// Token: 0x04000008 RID: 8
-			public string barcode = barcode;
-```
