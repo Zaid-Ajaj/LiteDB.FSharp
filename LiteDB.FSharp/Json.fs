@@ -83,6 +83,14 @@ module private Cache =
     let inheritedConverterTypes = ConcurrentDictionary<string,Type list>()
 
 open Cache
+open System.IO
+open Newtonsoft.Json
+open Newtonsoft.Json.Linq
+open Newtonsoft.Json.Linq
+open Newtonsoft.Json.Linq
+open Newtonsoft.Json.Linq
+open Newtonsoft.Json.Linq
+open Newtonsoft.Json.Linq
 
 /// Converts F# options, tuples and unions to a format understandable
 /// A derivative of Fable's JsonConverter. Code adapted from Lev Gorodinski's original.
@@ -106,6 +114,9 @@ type FSharpJsonConverter() =
     let getUci t name =
         FSharpType.GetUnionCases(t)
         |> Array.find (fun uci -> uci.Name = name)
+
+    let isInheritedConverterType (tp: Type) =
+        inheritedConverterTypes.ContainsKey(tp.FullName)
 
     let isObjectExpression (tp: Type) =
         let fullName = tp.FullName
@@ -143,7 +154,7 @@ type FSharpJsonConverter() =
                 else Kind.Other)
         
         match kind with 
-        | Kind.Other -> isObjectExpression t
+        | Kind.Other -> isObjectExpression t || isInheritedConverterType t
         | _ -> true       
 
     override x.WriteJson(writer, value, serializer) =
@@ -325,7 +336,7 @@ type FSharpJsonConverter() =
             let mapSerializer = typedefof<MapSerializer<_,_>>.MakeGenericType mapTypes
             let mapDeserializeMethod = mapSerializer.GetMethod("Deserialize")
             mapDeserializeMethod.Invoke(null, [| t; reader; serializer |])
-        | true, Kind.Other when isObjectExpression t ->  
+        | true, Kind.Other when isInheritedConverterType t ->  
             let inheritedTypes =
                 Seq.concat inheritedConverterTypes.Values
 
@@ -338,11 +349,11 @@ type FSharpJsonConverter() =
             match reader.TokenType with
             | JsonToken.String ->
                 let value = serializer.Deserialize(reader, typeof<string>) :?> string
-                let tp = findTypes value |> Seq.exactlyOne
-                Activator.CreateInstance(tp)
+                let objectExpressionTp = findTypes value |> Seq.exactlyOne
+                Activator.CreateInstance(objectExpressionTp)
             | JsonToken.StartObject ->
                 let jObject = JObject.Load(reader)
-                let tp =
+                let objectExpressionTp =
                     let itName = jObject.["$interfaceName"].ToString()
                     jObject.Remove("$interfaceName") |> ignore                   
                     let keys = jObject.Properties() |> Seq.map (fun p -> p.Name)
@@ -354,9 +365,21 @@ type FSharpJsonConverter() =
                             | 0 -> true
                             | _ -> false
                     )
-                jObject.ToObject(tp)
+                let reader = new JTokenReader(jObject)
+                advance reader
+                advance reader
+                advance reader
+                let itemTypes = objectExpressionTp.GetFields() |> Array.map (fun pi -> pi.FieldType)
+                if itemTypes.Length > 1
+                then
+                    let values = readElements(reader, itemTypes, serializer)
+                    advance reader
+                    Activator.CreateInstance(objectExpressionTp,[|values|])             
+                else
+                    let value = serializer.Deserialize(reader, itemTypes.[0])
+                    advance reader
+                    Activator.CreateInstance(objectExpressionTp,[|value|])        
             | _ -> failwith "invalid token"
-                      
         | true, _ ->
             serializer.Deserialize(reader, t)
 

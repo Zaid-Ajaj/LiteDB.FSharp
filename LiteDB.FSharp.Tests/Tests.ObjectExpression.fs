@@ -31,7 +31,7 @@ let useDatabase (f: LiteRepository -> unit) =
 let objectExpressionTests =
   testList "ObjectExpressionTests Tests" [
   
-    ftestCase "EOrder with item1" <| fun _ -> 
+    testCase "EOrder with item1" <| fun _ -> 
       useDatabase <| fun db ->
         let item1 = 
             { new Item1 with 
@@ -57,6 +57,41 @@ let objectExpressionTests =
                 pass()
             | _ -> fail()    
         | _ -> fail()    
+
+    testCase "EOrder with items has different arts" <| fun _ -> 
+      useDatabase <| fun db ->
+        let item1 = 
+            { new Item1 with 
+                member this.Id = 0
+                member this.Art = "art1"
+                member this.Name = "name"
+                member this.Number = 1000
+                member this.Barcode = "7254301" }
+        let item2 = 
+            { new Item1 with 
+                member this.Id = 0
+                member this.Art = "art2"
+                member this.Name = "name"
+                member this.Number = 1000
+                member this.Barcode = "7254301" }        
+        let tp1 = item1.GetType()
+        FSharpJsonConverter.registerInheritedConverterType<IItem>(tp1)          
+        let tp2 = item1.GetType()
+        FSharpJsonConverter.registerInheritedConverterType<IItem>(tp2)     
+        let eorder = { Id = 1; Items = [item1;item2];  OrderNumRange = "" }
+
+        let queryedEOrder =
+            db 
+            |> LiteRepository.insertItem eorder
+            |> LiteRepository.query<EOrder> 
+            |> LiteQueryable.first
+        
+        match queryedEOrder.Items with 
+        | [item1;item2] -> 
+            if item1.Art = "art1" && item2.Art = "art2" 
+            then pass()
+            else pass()
+        | _ -> fail()   
 
     testCase "EOrder with item2" <| fun _ -> 
       useDatabase <| fun db ->
@@ -91,6 +126,33 @@ let objectExpressionTests =
             { new Item2 with 
                 member this.Id = 0
                 member this.Art = field
+                member this.Name = "name"
+                member this.Number = 1000
+                member this.Color = "red" 
+                member this.Size = 39}
+        let tp = item2.GetType()
+        FSharpJsonConverter.registerInheritedConverterType<IItem>(tp)    
+        let eorder = { Id = 1; Items = [item2];  OrderNumRange = "" }
+        let queryedEOrder =
+            db 
+            |> LiteRepository.insertItem eorder
+            |> LiteRepository.query<EOrder> 
+            |> LiteQueryable.first
+        
+        match queryedEOrder.Items with 
+        | [item] -> 
+            if (item :? IColor) && (item :? ISize)
+            then pass()
+            else fail()
+        | _ -> fail()   
+        
+    testCase "EOrder with item2 having big size anonymous field" <| fun _ -> 
+      useDatabase <| fun db ->
+        let fields = List.replicate 10000 "field"
+        let item2 = 
+            { new Item2 with 
+                member this.Id = 0
+                member this.Art = fields.[0]
                 member this.Name = "name"
                 member this.Number = 1000
                 member this.Color = "red" 
