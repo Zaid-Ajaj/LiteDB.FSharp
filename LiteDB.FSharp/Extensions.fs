@@ -130,4 +130,9 @@ module Extensions =
 
         static member find (exp: Expression<Func<'a,bool>>) (query: LiteQueryable<'a>) =
             query |> LiteQueryable.where exp |> LiteQueryable.first
+        
+        static member tryFirst (query: LiteQueryable<'a>) =
+            query.ToEnumerable() |> Seq.tryHead
 
+        static member tryFind (exp: Expression<Func<'a,bool>>) (query: LiteQueryable<'a>) =
+            query |> LiteQueryable.where exp |> LiteQueryable.tryFirst
