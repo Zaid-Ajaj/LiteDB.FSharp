@@ -357,19 +357,22 @@ type FSharpJsonConverter() =
                             | 0 -> true
                             | _ -> false
                     )
-                let reader = new JTokenReader(jObject)
-                advance reader
-                advance reader
-                advance reader
                 let itemTypes = objectExpressionTp.GetFields() |> Array.map (fun pi -> pi.FieldType)
                 if itemTypes.Length > 1
                 then
-                    let values = readElements(reader, itemTypes, serializer)
-                    advance reader
-                    Activator.CreateInstance(objectExpressionTp,[|values|])             
+                    let propertyValues = jObject.PropertyValues()
+                    let values = 
+                        propertyValues |> Seq.mapi (fun i (v: JToken) ->
+                            let reader = new JTokenReader(v)
+                            serializer.Deserialize(reader, itemTypes.[i])
+                        ) |> Array.ofSeq
+                    Activator.CreateInstance(objectExpressionTp,values)             
                 else
-                    let value = serializer.Deserialize(reader, itemTypes.[0])
+                    let reader = new JTokenReader(jObject)
                     advance reader
+                    advance reader        
+                    advance reader
+                    let value = serializer.Deserialize(reader, itemTypes.[0])
                     Activator.CreateInstance(objectExpressionTp,[|value|])        
             | _ -> failwith "invalid token"
         | true, _ ->
