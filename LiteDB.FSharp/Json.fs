@@ -329,8 +329,7 @@ type FSharpJsonConverter() =
             let mapDeserializeMethod = mapSerializer.GetMethod("Deserialize")
             mapDeserializeMethod.Invoke(null, [| t; reader; serializer |])
         | true, Kind.Other when isInheritedConverterType t ->  
-            let inheritedTypes =
-                Seq.concat inheritedConverterTypes.Values
+            let inheritedTypes = inheritedConverterTypes.[t.FullName]
 
             let findTypes interfaceName =
                 Seq.filter (fun (tp: Type) ->
