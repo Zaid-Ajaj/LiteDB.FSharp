@@ -442,6 +442,7 @@ The serialized data contains `let fields = List.replicate 10000 ["field"]
 It is very large (about 10000 string size)
 
 ### The best way i found to solve this limitations now
+```fsharp
 let fields = List.replicate 10000 "field"
 let id = 0
 let art = fields.[0]
@@ -455,6 +456,7 @@ let item1 =
         member this.Name = name
         member this.Number = number
         member this.Barcode = barcode }
+```
 Only put last evalutated value to object expression then all datas are serialize **corrently**
 The generated c# code is 
 ```csharp
