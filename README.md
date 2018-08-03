@@ -376,8 +376,8 @@ You can also find the some issue in https://github.com/JamesNK/Newtonsoft.Json/i
 **Limitation2**
 ```fsharp
 let fields = List.replicate 10000 ["field"]
-let item = 
-    { new Item with 
+let item1 = 
+    { new Item1 with 
         member this.Id = 0
         member this.Art = fields.[0]
         member this.Name = "name"
@@ -441,4 +441,76 @@ The serialized data contains `let fields = List.replicate 10000 ["field"]
 ` 
 It is very large (about 10000 string size)
 
+### The best way i found to solve this limitations now
+let fields = List.replicate 10000 "field"
+let id = 0
+let art = fields.[0]
+let name = "name"
+let number = 1000
+let barcode = "7254301"
+let item1 = 
+    { new Item1 with 
+        member this.Id = id
+        member this.Art = art
+        member this.Name = name
+        member this.Number = number
+        member this.Barcode = barcode }
+Only put last evalutated value to object expression then all datas are serialize **corrently**
+The generated c# code is 
+```csharp
+		// Token: 0x0200000A RID: 10
+		[CompilationMapping(6)]
+		[Serializable]
+		[StructLayout(LayoutKind.Auto, CharSet = CharSet.Auto)]
+		internal sealed class item1@70-1 : ObjectExpression.Item1
+		{
+			// Token: 0x06000013 RID: 19 RVA: 0x000022F0 File Offset: 0x000004F0
+			public item1@70-1(int id, string art, string name, int number, string barcode) : this()
+			{
+			}
 
+			// Token: 0x06000014 RID: 20 RVA: 0x00002320 File Offset: 0x00000520
+			int Types.IItem.Tests-Types-IItem-get_Id()
+			{
+				return this.id;
+			}
+
+			// Token: 0x06000015 RID: 21 RVA: 0x00002328 File Offset: 0x00000528
+			string Types.IItem.Tests-Types-IItem-get_Art()
+			{
+				return this.art;
+			}
+
+			// Token: 0x06000016 RID: 22 RVA: 0x00002330 File Offset: 0x00000530
+			string Types.IItem.Tests-Types-IItem-get_Name()
+			{
+				return this.name;
+			}
+
+			// Token: 0x06000017 RID: 23 RVA: 0x00002338 File Offset: 0x00000538
+			int Types.IItem.Tests-Types-IItem-get_Number()
+			{
+				return this.number;
+			}
+
+			// Token: 0x06000018 RID: 24 RVA: 0x00002340 File Offset: 0x00000540
+			string Types.IBarcode.Tests-Types-IBarcode-get_Barcode()
+			{
+				return this.barcode;
+			}
+
+			// Token: 0x04000004 RID: 4
+			public int id = id;
+
+			// Token: 0x04000005 RID: 5
+			public string art = art;
+
+			// Token: 0x04000006 RID: 6
+			public string name = name;
+
+			// Token: 0x04000007 RID: 7
+			public int number = number;
+
+			// Token: 0x04000008 RID: 8
+			public string barcode = barcode;
+```
