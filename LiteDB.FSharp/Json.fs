@@ -83,14 +83,6 @@ module private Cache =
     let inheritedConverterTypes = ConcurrentDictionary<string,Type list>()
 
 open Cache
-open System.IO
-open Newtonsoft.Json
-open Newtonsoft.Json.Linq
-open Newtonsoft.Json.Linq
-open Newtonsoft.Json.Linq
-open Newtonsoft.Json.Linq
-open Newtonsoft.Json.Linq
-open Newtonsoft.Json.Linq
 
 /// Converts F# options, tuples and unions to a format understandable
 /// A derivative of Fable's JsonConverter. Code adapted from Lev Gorodinski's original.
