@@ -179,4 +179,7 @@ mapper.DbRef<Order,_>(fun c -> c.Company)
 
 ```
 
-
+### Serialize and derialize object expression 
+*Note:* This is a incompleted feature 
+But sometimes is very *useful* for OO feature: interaction between library and consumer
+[check here for more info](https://github.com/Zaid-Ajaj/LiteDB.FSharp/blob/master/docs/object-expression.md)

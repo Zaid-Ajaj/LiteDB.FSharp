@@ -33,7 +33,26 @@ type ComplexUnion<'t> =
     | Int of int
     | String of string 
     | Generic of Maybe<'t>
-    
+
+
+
+
+type IColor =
+    abstract member Color : string 
+
+type IBarcode =
+    abstract member Barcode : string 
+
+type ISize =
+    abstract member Size : int
+
+type IItem = 
+    abstract member Id : int
+    abstract member Name : string
+    abstract member Art : string
+    abstract member Number : int
+
+
 [<CLIMutable>]
 type Company=
   { Id: int
@@ -42,6 +61,7 @@ type Company=
 [<CLIMutable>]    
 type EOrder=
   { Id: int
+    Items : IItem list
     OrderNumRange: string }   
 
 [<CLIMutable>]    

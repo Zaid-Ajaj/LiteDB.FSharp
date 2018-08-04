@@ -1,18 +1,18 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Tests.Types.fs" />
-    <Compile Include="Tests.Bson.fs" />
-    <Compile Include="Tests.LiteDatabase.fs" />  
-    <Compile Include="Tests.DBRef.fs" />
-    <Compile Include="Tests.Runner.fs" />
+    <ProjectReference Include="..\LiteDB.FSharp\LiteDB.FSharp.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LiteDB.FSharp\LiteDB.FSharp.fsproj" />
+    <Compile Include="Tests.Types.fs" />
+    <Compile Include="Tests.Bson.fs" />
+    <Compile Include="Tests.LiteDatabase.fs" />
+    <Compile Include="Tests.DBRef.fs" />
+    <Compile Include="Tests.ObjectExpression.fs" />
+    <Compile Include="Tests.Runner.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
