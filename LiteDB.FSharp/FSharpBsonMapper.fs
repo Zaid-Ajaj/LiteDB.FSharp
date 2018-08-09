@@ -12,13 +12,13 @@ type FSharpBsonMapper() =
     member this.DbRef<'T1,'T2> (exp: Expression<Func<'T1,'T2>>) =
         this.Entity<'T1>().DbRef(exp) |> ignore
     
-    member this.RegisterInheritedConverterType<'T1,'T2>() =
+    static member RegisterInheritedConverterType<'T1,'T2>() =
         let t1 = typeof<'T1>
         let t2 = typeof<'T2>
         Cache.inheritedConverterTypes.AddOrUpdate(
             t1.FullName,
-            [t2],
-            (fun _ types -> types @ [t2])
+            HashSet [t2],
+            ( fun _ types -> types.Add(t2) |> ignore; types )
         ) |> ignore
 
     override self.ToObject(entityType: System.Type, entity: BsonDocument) = Bson.deserializeByType entity entityType 

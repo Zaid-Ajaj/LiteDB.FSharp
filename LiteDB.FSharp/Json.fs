@@ -80,7 +80,7 @@ type MapSerializer<'k,'v when 'k : comparison>() =
 module private Cache =
     let jsonConverterTypes = ConcurrentDictionary<Type,Kind>()
     let serializationBinderTypes = ConcurrentDictionary<string,Type>()
-    let inheritedConverterTypes = ConcurrentDictionary<string,Type list>()
+    let inheritedConverterTypes = ConcurrentDictionary<string,HashSet<Type>>()
 
 open Cache
 
@@ -222,7 +222,7 @@ type FSharpJsonConverter() =
                     serializer.Serialize(writer, typeName)
                 else
                     writer.WriteStartObject()
-                    writer.WritePropertyName("$typeName")
+                    writer.WritePropertyName("TypeName")
                     writer.WriteValue(typeName)
                     fieldInfos |> Array.iter (fun fi ->
                         let field = fi.GetValue(value)
@@ -339,10 +339,10 @@ type FSharpJsonConverter() =
             | JsonToken.StartObject ->
                 let jObject = JObject.Load(reader)
                 let inheritedType =
-                    let typeName = jObject.["$typeName"].ToString()
+                    let typeName = jObject.["TypeName"].ToString()
                     findType typeName
                     
-                jObject.Remove("$typeName") |> ignore                   
+                jObject.Remove("TypeName") |> ignore                   
 
                 let itemTypes = inheritedType.GetFields() |> Array.map (fun pi -> pi.FieldType)
                 if itemTypes.Length > 1

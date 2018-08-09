@@ -57,8 +57,8 @@ type Item2 =
 let useDatabase (f: LiteRepository -> unit) = 
     let mapper = FSharpBsonMapper()
     use memoryStream = new MemoryStream()
-    mapper.RegisterInheritedConverterType<IItem,Item1>()
-    mapper.RegisterInheritedConverterType<IItem,Item2>()
+    FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1>()
+    FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2>()
     use db = new LiteRepository(memoryStream, mapper)
     f db  
     
@@ -75,7 +75,7 @@ let inheritedTypeTests =
                 number = 1000,
                 barcode = "7254301" 
             )
-            
+
         let item2 = 
             Item2 ( 
                 id = 0,
