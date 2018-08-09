@@ -107,10 +107,10 @@ type FSharpJsonConverter() =
         FSharpType.GetUnionCases(t)
         |> Array.find (fun uci -> uci.Name = name)
 
-    let isInheritedConverterType (tp: Type) =
+    let isRegisteredParentType (tp: Type) =
         inheritedConverterTypes.ContainsKey(tp.FullName)
 
-    let isObjectExpression (tp: Type) =
+    let isRegisteredInherientedType (tp: Type) =
         let fullName = tp.FullName
         inheritedConverterTypes.Values
                         |> Seq.concat
@@ -146,7 +146,7 @@ type FSharpJsonConverter() =
                 else Kind.Other)
         
         match kind with 
-        | Kind.Other -> isObjectExpression t || isInheritedConverterType t
+        | Kind.Other -> isRegisteredInherientedType t || isRegisteredParentType t
         | _ -> true       
 
     override x.WriteJson(writer, value, serializer) =
@@ -211,24 +211,19 @@ type FSharpJsonConverter() =
                 let mapSerializer = typedefof<MapSerializer<_,_>>.MakeGenericType mapTypes
                 let mapSerializeMethod = mapSerializer.GetMethod("Serialize")
                 mapSerializeMethod.Invoke(null, [| value; writer; serializer |]) |> ignore
-            | true, Kind.Other when isObjectExpression t ->
-                let interfaceName = 
-                    t.GetInterfaces()
-                    |> Seq.tryHead
-                    |> function 
-                        | Some it -> it.FullName
-                        | None -> 
-                            failwith "ObjectExpression should be spawn from interface"
+            | true, Kind.Other when isRegisteredInherientedType t ->
+                let typeName = 
+                    t.FullName
 
                 let fieldInfos = value.GetType().GetFields()
                 
-                /// write interface name to json as type info 
+                /// write type name to json as type info 
                 if fieldInfos.Length = 0 then
-                    serializer.Serialize(writer, interfaceName)
+                    serializer.Serialize(writer, typeName)
                 else
                     writer.WriteStartObject()
-                    writer.WritePropertyName("$interfaceName")
-                    writer.WriteValue(interfaceName)
+                    writer.WritePropertyName("$typeName")
+                    writer.WriteValue(typeName)
                     fieldInfos |> Array.iter (fun fi ->
                         let field = fi.GetValue(value)
                         let name = fi.Name
@@ -328,35 +323,28 @@ type FSharpJsonConverter() =
             let mapSerializer = typedefof<MapSerializer<_,_>>.MakeGenericType mapTypes
             let mapDeserializeMethod = mapSerializer.GetMethod("Deserialize")
             mapDeserializeMethod.Invoke(null, [| t; reader; serializer |])
-        | true, Kind.Other when isInheritedConverterType t ->  
+        | true, Kind.Other when isRegisteredParentType t ->  
             let inheritedTypes = inheritedConverterTypes.[t.FullName]
 
-            let findTypes interfaceName =
-                Seq.filter (fun (tp: Type) ->
-                    let it = tp.GetInterfaces() |> Seq.head
-                    it.FullName = interfaceName
+            let findType typeName =
+                Seq.find (fun (tp: Type) ->
+                    tp.FullName = typeName
                 ) inheritedTypes
             
             match reader.TokenType with
             | JsonToken.String ->
                 let value = serializer.Deserialize(reader, typeof<string>) :?> string
-                let objectExpressionTp = findTypes value |> Seq.exactlyOne
-                Activator.CreateInstance(objectExpressionTp)
+                let inheritedType = findType value 
+                Activator.CreateInstance(inheritedType)
             | JsonToken.StartObject ->
                 let jObject = JObject.Load(reader)
-                let objectExpressionTp =
-                    let itName = jObject.["$interfaceName"].ToString()
-                    jObject.Remove("$interfaceName") |> ignore                   
-                    let keys = jObject.Properties() |> Seq.map (fun p -> p.Name)
-                    let tps = findTypes itName
-                    tps |> Seq.find (fun tp ->
-                        let fields = tp.GetFields() |> Seq.map (fun fd -> fd.Name)
-                        Seq.compareWith (fun s1 s2 -> String.Compare(s1,s2)) keys fields
-                        |> function 
-                            | 0 -> true
-                            | _ -> false
-                    )
-                let itemTypes = objectExpressionTp.GetFields() |> Array.map (fun pi -> pi.FieldType)
+                let inheritedType =
+                    let typeName = jObject.["$typeName"].ToString()
+                    findType typeName
+                    
+                jObject.Remove("$typeName") |> ignore                   
+
+                let itemTypes = inheritedType.GetFields() |> Array.map (fun pi -> pi.FieldType)
                 if itemTypes.Length > 1
                 then
                     let propertyValues = jObject.PropertyValues()
@@ -365,24 +353,14 @@ type FSharpJsonConverter() =
                             let reader = new JTokenReader(v)
                             serializer.Deserialize(reader, itemTypes.[i])
                         ) |> Array.ofSeq
-                    Activator.CreateInstance(objectExpressionTp,values)             
+                    Activator.CreateInstance(inheritedType,values)             
                 else
                     let reader = new JTokenReader(jObject)
                     advance reader
                     advance reader        
                     advance reader
                     let value = serializer.Deserialize(reader, itemTypes.[0])
-                    Activator.CreateInstance(objectExpressionTp,[|value|])        
+                    Activator.CreateInstance(inheritedType,[|value|])        
             | _ -> failwith "invalid token"
         | true, _ ->
             serializer.Deserialize(reader, t)
-
-[<RequireQualifiedAccess>]
-module FSharpJsonConverter =
-    let registerInheritedConverterType<'T1>(t2) =
-        let t1 = typeof<'T1>
-        inheritedConverterTypes.AddOrUpdate(
-            t1.FullName,
-            [t2],
-            (fun _ types -> types @ [t2])
-        ) |> ignore

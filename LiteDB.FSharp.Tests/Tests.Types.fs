@@ -48,8 +48,8 @@ type ISize =
 
 type IItem = 
     abstract member Id : int
-    abstract member Name : string
     abstract member Art : string
+    abstract member Name : string
     abstract member Number : int
 
 
