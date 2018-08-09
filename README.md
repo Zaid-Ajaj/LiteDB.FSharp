@@ -179,7 +179,113 @@ mapper.DbRef<Order,_>(fun c -> c.Company)
 
 ```
 
-### Serialize and derialize object expression 
-*Note:* This is a incompleted feature 
-But sometimes is very *useful* for OO feature: interaction between library and consumer
-[check here for more info](https://github.com/Zaid-Ajaj/LiteDB.FSharp/blob/master/docs/object-expression.md)
+### Inheritence 
+`Item1` and `Item2` is inherited from `IItem`
+
+we must register the type relations first globally
+```fsharp
+FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1>()
+FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2>()
+```
+By conversion,
+The inherited type must has mutable field for serializable and deserializable
+```fsharp 
+val mutable Id : int
+```
+If you want to using `property first` but not `val mutable field`
+A PR is welcome. 
+
+Sample codes:
+```fsharp
+/// classlibray.fs
+[<CLIMutable>]    
+type EOrder=
+  { Id: int
+    Items : IItem list
+    OrderNumRange: string }   
+
+
+/// consumer.fs
+type Item1 =
+    /// val mutable will make field serializable and deserializable
+    val mutable Id : int
+    val mutable Art : string
+    val mutable Name : string
+    val mutable Number : int
+
+    
+    interface IItem with 
+        member this.Art = this.Art
+        member this.Id = this.Id
+        member this.Name = this.Name
+        member this.Number = this.Number
+    val mutable Barcode : string
+
+    interface IBarcode with 
+        member this.Barcode = this.Barcode    
+
+    /// type constructor 
+    new (id, art, name, number, barcode) =
+        { Id = id; Art = art; Name = name; Number = number; Barcode = barcode }
+
+type Item2 = 
+    val mutable Id : int
+    val mutable Art : string
+    val mutable Name : string
+    val mutable Number : int
+
+    interface IItem with 
+        member this.Art = this.Art
+        member this.Id = this.Id
+        member this.Name = this.Name
+        member this.Number = this.Number
+
+    val mutable Size : int
+    interface ISize with 
+        member this.Size = this.Size 
+    val mutable Color : string
+
+    interface IColor with 
+        member this.Color = this.Color 
+
+    new (id, art, name, number, size, color) =
+        { Id = id; Art = art; Name = name; Number = number; Size = size; Color = color }
+
+FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1>()
+FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2>()
+
+let item1 = 
+    Item1 ( 
+        id = 0,
+        art = "art",
+        name = "name",
+        number = 1000,
+        barcode = "7254301" 
+    )
+
+let item2 = 
+    Item2 ( 
+        id = 0,
+        art = "art",
+        name = "name",
+        number = 1000,
+        color = "red" ,
+        size = 39 
+    )
+
+let eorder = { Id = 1; Items = [item1;item2];  OrderNumRange = "" }
+
+let queryedEOrder =
+    db 
+    |> LiteRepository.insertItem eorder
+    |> LiteRepository.query<EOrder> 
+    |> LiteQueryable.first
+
+match queryedEOrder.Items with 
+| [item1;item2] -> 
+    match item1,item2 with 
+    | :? IBarcode,:? IColor -> 
+        pass()
+    | _ -> fail()    
+| _ -> fail()   
+```

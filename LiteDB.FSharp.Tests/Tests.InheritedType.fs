@@ -65,7 +65,7 @@ let useDatabase (f: LiteRepository -> unit) =
 let inheritedTypeTests =
   testList "InheritedTypeTests Tests" [
   
-    testCase "EOrder with items than has different types" <| fun _ -> 
+    testCase "EOrder with items that has different types" <| fun _ -> 
       useDatabase <| fun db ->
         let item1 = 
             Item1 ( 
