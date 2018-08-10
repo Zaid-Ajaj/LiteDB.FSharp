@@ -78,16 +78,21 @@ type MapSerializer<'k,'v when 'k : comparison>() =
         writer.WriteEndObject()
 
 module private Cache =
+
     let jsonConverterTypes = ConcurrentDictionary<Type,Kind>()
     let serializationBinderTypes = ConcurrentDictionary<string,Type>()
     let inheritedConverterTypes = ConcurrentDictionary<string,HashSet<Type>>()
 
 open Cache
+type DeserializeInheritedTypeJsonConverter() =
+    inherit FSharpJsonConverter()
+    override x.CanConvert(t) =
+        base.CanConvert(t) && (base.IsRegisteredInherientedType t |> not)
 
 /// Converts F# options, tuples and unions to a format understandable
 /// A derivative of Fable's JsonConverter. Code adapted from Lev Gorodinski's original.
 /// See https://goo.gl/F6YiQk
-type FSharpJsonConverter() =
+and FSharpJsonConverter() =
     inherit Newtonsoft.Json.JsonConverter()
     let advance(reader: JsonReader) =
         reader.Read() |> ignore
@@ -110,7 +115,9 @@ type FSharpJsonConverter() =
     let isRegisteredParentType (tp: Type) =
         inheritedConverterTypes.ContainsKey(tp.FullName)
 
-    let isRegisteredInherientedType (tp: Type) =
+    static let deserializeInheritedTypeJsonConverters : JsonConverter[] = [|DeserializeInheritedTypeJsonConverter()|]
+
+    member x.IsRegisteredInherientedType (tp: Type) =
         let fullName = tp.FullName
         inheritedConverterTypes.Values
                         |> Seq.concat
@@ -146,7 +153,7 @@ type FSharpJsonConverter() =
                 else Kind.Other)
         
         match kind with 
-        | Kind.Other -> isRegisteredInherientedType t || isRegisteredParentType t
+        | Kind.Other -> x.IsRegisteredInherientedType t || isRegisteredParentType t
         | _ -> true       
 
     override x.WriteJson(writer, value, serializer) =
@@ -211,7 +218,7 @@ type FSharpJsonConverter() =
                 let mapSerializer = typedefof<MapSerializer<_,_>>.MakeGenericType mapTypes
                 let mapSerializeMethod = mapSerializer.GetMethod("Serialize")
                 mapSerializeMethod.Invoke(null, [| value; writer; serializer |]) |> ignore
-            | true, Kind.Other when isRegisteredInherientedType t ->
+            | true, Kind.Other when x.IsRegisteredInherientedType t ->
                 let typeName = 
                     t.FullName
 
@@ -341,26 +348,13 @@ type FSharpJsonConverter() =
                 let inheritedType =
                     let typeName = jObject.["TypeName"].ToString()
                     findType typeName
-                    
-                jObject.Remove("TypeName") |> ignore                   
 
-                let itemTypes = inheritedType.GetFields() |> Array.map (fun pi -> pi.FieldType)
-                if itemTypes.Length > 1
-                then
-                    let propertyValues = jObject.PropertyValues()
-                    let values = 
-                        propertyValues |> Seq.mapi (fun i (v: JToken) ->
-                            let reader = new JTokenReader(v)
-                            serializer.Deserialize(reader, itemTypes.[i])
-                        ) |> Array.ofSeq
-                    Activator.CreateInstance(inheritedType,values)             
-                else
-                    let reader = new JTokenReader(jObject)
-                    advance reader
-                    advance reader        
-                    advance reader
-                    let value = serializer.Deserialize(reader, itemTypes.[0])
-                    Activator.CreateInstance(inheritedType,[|value|])        
+                jObject.Remove("TypeName") |> ignore  
+                let json = jObject.ToString()
+                JsonConvert.DeserializeObject(json, inheritedType, deserializeInheritedTypeJsonConverters)
+                
             | _ -> failwith "invalid token"
         | true, _ ->
             serializer.Deserialize(reader, t)
+
+
