@@ -84,15 +84,11 @@ module private Cache =
     let inheritedConverterTypes = ConcurrentDictionary<string,HashSet<Type>>()
 
 open Cache
-type DeserializeInheritedTypeJsonConverter() =
-    inherit FSharpJsonConverter()
-    override x.CanConvert(t) =
-        base.CanConvert(t) && (base.IsRegisteredInherientedType t |> not)
 
 /// Converts F# options, tuples and unions to a format understandable
 /// A derivative of Fable's JsonConverter. Code adapted from Lev Gorodinski's original.
 /// See https://goo.gl/F6YiQk
-and FSharpJsonConverter() =
+type FSharpJsonConverter() =
     inherit Newtonsoft.Json.JsonConverter()
     let advance(reader: JsonReader) =
         reader.Read() |> ignore
@@ -115,15 +111,6 @@ and FSharpJsonConverter() =
     let isRegisteredParentType (tp: Type) =
         inheritedConverterTypes.ContainsKey(tp.FullName)
 
-    static let deserializeInheritedTypeJsonConverters : JsonConverter[] = [|DeserializeInheritedTypeJsonConverter()|]
-
-    member x.IsRegisteredInherientedType (tp: Type) =
-        let fullName = tp.FullName
-        inheritedConverterTypes.Values
-                        |> Seq.concat
-                        |> Seq.exists (fun inheritedType ->
-                            inheritedType.FullName = fullName
-                        )
     override x.CanConvert(t) =
         let kind =
             jsonConverterTypes.GetOrAdd(t, fun t ->
@@ -153,7 +140,7 @@ and FSharpJsonConverter() =
                 else Kind.Other)
         
         match kind with 
-        | Kind.Other -> x.IsRegisteredInherientedType t || isRegisteredParentType t
+        | Kind.Other -> isRegisteredParentType t
         | _ -> true       
 
     override x.WriteJson(writer, value, serializer) =
@@ -218,26 +205,6 @@ and FSharpJsonConverter() =
                 let mapSerializer = typedefof<MapSerializer<_,_>>.MakeGenericType mapTypes
                 let mapSerializeMethod = mapSerializer.GetMethod("Serialize")
                 mapSerializeMethod.Invoke(null, [| value; writer; serializer |]) |> ignore
-            | true, Kind.Other when x.IsRegisteredInherientedType t ->
-                let typeName = 
-                    t.FullName
-
-                let fieldInfos = value.GetType().GetFields()
-                
-                /// write type name to json as type info 
-                if fieldInfos.Length = 0 then
-                    serializer.Serialize(writer, typeName)
-                else
-                    writer.WriteStartObject()
-                    writer.WritePropertyName("TypeName")
-                    writer.WriteValue(typeName)
-                    fieldInfos |> Array.iter (fun fi ->
-                        let field = fi.GetValue(value)
-                        let name = fi.Name
-                        writer.WritePropertyName(name)
-                        serializer.Serialize(writer,field)
-                    )        
-                    writer.WriteEndObject()    
             | true, _ ->                
                 serializer.Serialize(writer, value)
 
@@ -333,27 +300,21 @@ and FSharpJsonConverter() =
         | true, Kind.Other when isRegisteredParentType t ->  
             let inheritedTypes = inheritedConverterTypes.[t.FullName]
 
-            let findType typeName =
-                Seq.find (fun (tp: Type) ->
-                    tp.FullName = typeName
-                ) inheritedTypes
-            
-            match reader.TokenType with
-            | JsonToken.String ->
-                let value = serializer.Deserialize(reader, typeof<string>) :?> string
-                let inheritedType = findType value 
-                Activator.CreateInstance(inheritedType)
-            | JsonToken.StartObject ->
-                let jObject = JObject.Load(reader)
-                let inheritedType =
-                    let typeName = jObject.["TypeName"].ToString()
-                    findType typeName
+            let findType (jsonFields: seq<string>) =
+                inheritedTypes |> Seq.maxBy (fun tp ->
+                    let fields = tp.GetFields() |> Seq.map (fun fd -> fd.Name)
+                    jsonFields |> Seq.filter(fun jsonField ->
+                        Seq.contains jsonField fields
+                    )
+                    |> Seq.length
+                )            
 
-                jObject.Remove("TypeName") |> ignore  
-                let json = jObject.ToString()
-                JsonConvert.DeserializeObject(json, inheritedType, deserializeInheritedTypeJsonConverters)
-                
-            | _ -> failwith "invalid token"
+            let jObject = JObject.Load(reader)
+            let jsonFields = jObject.Properties() |> Seq.map (fun prop -> prop.Name) |> List.ofSeq
+            let inheritedType = findType jsonFields
+            printfn "found inherited type %s with jsonFields %A" inheritedType.FullName jsonFields
+            jObject.ToObject(inheritedType,serializer)
+
         | true, _ ->
             serializer.Deserialize(reader, t)
 
