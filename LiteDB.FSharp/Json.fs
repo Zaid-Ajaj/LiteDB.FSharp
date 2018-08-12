@@ -303,10 +303,11 @@ type FSharpJsonConverter() =
             let findType (jsonFields: seq<string>) =
                 inheritedTypes |> Seq.maxBy (fun tp ->
                     let fields = tp.GetFields() |> Seq.map (fun fd -> fd.Name)
-                    jsonFields |> Seq.filter(fun jsonField ->
+                    let fieldsLength = Seq.length fields
+                    (jsonFields |> Seq.filter(fun jsonField ->
                         Seq.contains jsonField fields
                     )
-                    |> Seq.length
+                    |> Seq.length),-fieldsLength
                 )            
 
             let jObject = JObject.Load(reader)
