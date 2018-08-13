@@ -180,7 +180,7 @@ mapper.DbRef<Order,_>(fun c -> c.Company)
 ```
 
 ### Inheritence 
-`Item1` and `Item2` is inherited from `IItem`
+`Item1` and `Item2` are inherited from `IItem`
 
 we must register the type relations first globally
 ```fsharp
@@ -192,10 +192,66 @@ The inherited type must has mutable field for serializable and deserializable
 ```fsharp 
 val mutable Id : int
 ```
-If you want to using `property first` but not `val mutable field`
-A PR is welcome. 
+*Note*:
+Because [json converter](https://github.com/Zaid-Ajaj/LiteDB.FSharp/blob/master/LiteDB.FSharp/Json.fs) find inherited type by comparing the fields names from inherited type and database
+```fsharp
+let findType (jsonFields: seq<string>) =
+    inheritedTypes |> Seq.maxBy (fun tp ->
+        let fields = tp.GetFields() |> Seq.map (fun fd -> fd.Name)
+        let fieldsLength = Seq.length fields
+        (jsonFields |> Seq.filter(fun jsonField ->
+            Seq.contains jsonField fields
+        )
+        |> Seq.length),-fieldsLength
+    )        
+```
 
-Sample codes:
+This means that we should not implement the some interface with different fields
+For example,we should not do below implementations
+```fsharp 
+type Item1 =
+
+    val mutable Id : int
+    val mutable Art : string
+    val mutable Name : string
+    val mutable Number : int
+
+    interface IItem with 
+        member this.Art = this.Art
+        member this.Id = this.Id
+        member this.Name = this.Name
+        member this.Number = this.Number
+
+/// Unexpected codes
+type Item2 =
+
+    val mutable Id2 : int
+    val mutable Art2 : string
+    val mutable Name2 : string
+    val mutable Number2 : int
+
+    interface IItem with 
+        member this.Art = this.Art2
+        member this.Id = this.Id2
+        member this.Name = this.Name2
+        member this.Number = this.Number2
+
+/// excepted codes
+type Item2 =
+
+    val mutable Id : int
+    val mutable Art : string
+    val mutable Name : string
+    val mutable Number : int
+
+    interface IItem with 
+        member this.Art = this.Art
+        member this.Id = this.Id
+        member this.Name = this.Name
+        member this.Number = this.Number
+```  
+
+Full sample codes:
 ```fsharp
 /// classlibray.fs
 [<CLIMutable>]    
