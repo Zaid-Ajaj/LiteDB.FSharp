@@ -11,7 +11,7 @@
     <Compile Include="Tests.Bson.fs" />
     <Compile Include="Tests.LiteDatabase.fs" />
     <Compile Include="Tests.DBRef.fs" />
-    <Compile Include="Tests.ObjectExpression.fs" />
+    <Compile Include="Tests.InheritedType.fs" />
     <Compile Include="Tests.Runner.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
