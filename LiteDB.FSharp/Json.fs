@@ -82,6 +82,7 @@ module private Cache =
     let jsonConverterTypes = ConcurrentDictionary<Type,Kind>()
     let serializationBinderTypes = ConcurrentDictionary<string,Type>()
     let inheritedConverterTypes = ConcurrentDictionary<string,HashSet<Type>>()
+    let inheritedTypeQuickAccessor = ConcurrentDictionary<string * list<string>,Type>()
 
 open Cache
 
@@ -299,21 +300,21 @@ type FSharpJsonConverter() =
             mapDeserializeMethod.Invoke(null, [| t; reader; serializer |])
         | true, Kind.Other when isRegisteredParentType t ->  
             let inheritedTypes = inheritedConverterTypes.[t.FullName]
-
-            let findType (jsonFields: seq<string>) =
-                inheritedTypes |> Seq.maxBy (fun tp ->
-                    let fields = tp.GetFields() |> Seq.map (fun fd -> fd.Name)
-                    let fieldsLength = Seq.length fields
-                    (jsonFields |> Seq.filter(fun jsonField ->
-                        Seq.contains jsonField fields
-                    )
-                    |> Seq.length),-fieldsLength
-                )            
-
             let jObject = JObject.Load(reader)
             let jsonFields = jObject.Properties() |> Seq.map (fun prop -> prop.Name) |> List.ofSeq
-            let inheritedType = findType jsonFields
-            printfn "found inherited type %s with jsonFields %A" inheritedType.FullName jsonFields
+            let inheritedType = inheritedTypeQuickAccessor.GetOrAdd((t.FullName,jsonFields),fun (_,jsonFields) ->
+                let findType (jsonFields: seq<string>) =
+                    inheritedTypes |> Seq.maxBy (fun tp ->
+                        let fields = tp.GetFields() |> Seq.map (fun fd -> fd.Name)
+                        let fieldsLength = Seq.length fields
+                        (jsonFields |> Seq.filter(fun jsonField ->
+                            Seq.contains jsonField fields
+                        )
+                        |> Seq.length),-fieldsLength
+                    )            
+                findType jsonFields
+            )
+            // printfn "found inherited type %s with jsonFields %A" inheritedType.FullName jsonFields
             jObject.ToObject(inheritedType,serializer)
 
         | true, _ ->
