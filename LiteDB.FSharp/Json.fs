@@ -247,19 +247,15 @@ type FSharpJsonConverter() =
             
             let value = 
                 match reader.TokenType with 
-                | JsonToken.StartObject -> 
-                    advance reader 
-                    let valueName = reader.Value :?> string 
-                    if valueName.StartsWith("$") 
-                    then 
-                        advance reader 
-                        let innerValue = serializer.Deserialize(reader, innerType)
-                        while reader.TokenType <> JsonToken.EndObject do
-                            advance reader 
-                        innerValue
-                    else 
-                        serializer.Deserialize(reader, innerType)
-                | _ -> serializer.Deserialize(reader, innerType)
+                | JsonToken.StartObject ->
+                    let jObject = JObject.Load(reader)
+                    let path = jObject.First.Path
+                    if path.StartsWith("$") then
+                        let value = jObject.GetValue(path)
+                        value.ToObject(innerType,serializer)
+                    else
+                        jObject.ToObject(innerType,serializer)
+                | _ -> serializer.Deserialize(reader,innerType)              
 
             let cases = FSharpType.GetUnionCases(t)
             if isNull value
