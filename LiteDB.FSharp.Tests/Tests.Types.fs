@@ -13,6 +13,7 @@ type RecordWithMap = { id : int; map: Map<string, string> }
 type RecordWithArray = { id: int; arr: int[] }
 type RecordWithDecimal = { id: int; number: decimal }
 type RecordWithLong = { id: int; long: int64 }
+type RecordWithFloat = { id: int; float: float }
 type RecordWithGuid = { id: int; guid: Guid }
 type RecordWithBytes = { id: int; data:byte[] }
 type RecordWithObjectId = { id: LiteDB.ObjectId }
