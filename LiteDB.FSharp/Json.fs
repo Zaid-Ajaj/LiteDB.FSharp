@@ -40,6 +40,7 @@ type Kind =
     | Decimal = 11
     | Binary = 12
     | ObjectId = 13
+    | Double = 14
 
 /// Helper for serializing map/dict with non-primitive, non-string keys such as unions and records.
 /// Performs additional serialization/deserialization of the key object and uses the resulting JSON
@@ -122,6 +123,8 @@ type FSharpJsonConverter() =
                 then Kind.Option
                 elif t.FullName = "System.Int64"
                 then Kind.Long
+                elif t.FullName = "System.Double"
+                then Kind.Double
                 elif t = typeof<LiteDB.ObjectId>
                 then Kind.ObjectId
                 elif t.FullName = "System.Numerics.BigInteger"
@@ -156,6 +159,9 @@ type FSharpJsonConverter() =
                 let value = sprintf "%+i" (value :?> int64)
                 numberLong.Add(JProperty("$numberLong", value))
                 numberLong.WriteTo(writer)
+            | true, Kind.Double ->
+                let value = (value :?> double).ToString("R")
+                writer.WriteValue(value)
             | true, Kind.Guid ->
                 let guidObject = JObject()
                 let guidValue = (value :?> Guid).ToString()
@@ -233,6 +239,9 @@ type FSharpJsonConverter() =
             let jsonObject = JObject.Load(reader)
             let value = jsonObject.["$numberLong"].Value<string>()
             upcast Int64.Parse(value)
+        | true, Kind.Double ->
+            let value = serializer.Deserialize(reader, typeof<string>) :?> string
+            upcast Double.Parse(value)
         | true, Kind.DateTime ->
             let jsonObject = JObject.Load(reader)
             let dateValue = jsonObject.["$date"].Value<string>()

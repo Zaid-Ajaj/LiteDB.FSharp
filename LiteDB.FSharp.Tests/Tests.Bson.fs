@@ -43,6 +43,13 @@ let bsonConversions =
       | { id = x } when x = id -> pass()
       | otherwise -> fail()
 
+    testCase "records with float" <| fun _ ->
+      let record = {id = 1; float = 8.5039370078740166}
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithFloat> doc with
+      | {id = 1; float = 8.5039370078740166} -> pass()
+      | otherwise -> fail()  
+
     testCase "records with decimals" <| fun _ ->
       let record = { id = 1; number = 20.0M }
       let doc = Bson.serialize record
