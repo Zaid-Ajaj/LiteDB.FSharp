@@ -31,6 +31,11 @@ type RecordWithOptionalDate = {
     Released : Option<DateTime>
 }
 
+type RecordWithOptionalRecord = {
+    Id : int
+    Record : Option<RecordWithStr>
+}
+
 type RecOptGuid = {
     Id: int 
     OtherId: Option<Guid>
@@ -126,6 +131,19 @@ let liteDatabaseUsage =
                         match doc.Id, doc.Released with 
                         | 1, None -> pass()
                         | _ -> fail() 
+
+        testCase "Documents with optional Record = Some can be used" <| fun _ ->
+            useDatabase <| fun db -> 
+                let docs = db.GetCollection<RecordWithOptionalRecord>()
+                docs.Insert { Id = 1; Record = Some {Id = 1; Name = "Name"} } |> ignore 
+                docs.FindAll()
+                |> Seq.tryHead 
+                |> function 
+                    | None -> fail() 
+                    | Some doc -> 
+                        match doc.Id, doc.Record with 
+                        | 1, Some {Id = 1; Name = "Name"} -> pass()
+                        | _ -> fail()             
 
         testCase "TryFindById extension works" <| fun _ ->
             useDatabase <| fun db ->

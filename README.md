@@ -222,7 +222,7 @@ type Item1 =
         member this.Name = this.Name
         member this.Number = this.Number
 
-/// Unexpected codes
+/// unexpected codes
 type Item2 =
 
     val mutable Id2 : int
@@ -236,7 +236,7 @@ type Item2 =
         member this.Name = this.Name2
         member this.Number = this.Number2
 
-/// excepted codes
+/// expected codes
 type Item2 =
 
     val mutable Id : int
