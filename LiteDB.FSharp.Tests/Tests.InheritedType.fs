@@ -54,11 +54,58 @@ type Item2 =
 
     new (id, art, name, number, size, color) =
         { Id = id; Art = art; Name = name; Number = number; Size = size; Color = color }
+
+[<CLIMutable>]
+type Item1OfRecord =
+    {
+        Id : int
+        Art : string
+        Name : string
+        Number : int
+        Barcode: string
+    }
+
+    
+    interface IItem with 
+        member this.Art = this.Art
+        member this.Id = this.Id
+        member this.Name = this.Name
+        member this.Number = this.Number
+
+    interface IBarcode with 
+        member this.Barcode = this.Barcode    
+
+[<CLIMutable>]
+type Item2OfRecord = 
+    {
+        Id : int
+        Art : string
+        Name : string
+        Number : int
+        Size : int
+        Color : string
+    }
+
+    interface IItem with 
+        member this.Art = this.Art
+        member this.Id = this.Id
+        member this.Name = this.Name
+        member this.Number = this.Number
+
+    interface ISize with 
+        member this.Size = this.Size 
+
+    interface IColor with 
+        member this.Color = this.Color 
+
+
 let useDatabase (f: LiteRepository -> unit) = 
     let mapper = FSharpBsonMapper()
     use memoryStream = new MemoryStream()
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1>()
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2>()
+    FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1OfRecord>()
+    FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2OfRecord>()
     use db = new LiteRepository(memoryStream, mapper)
     f db  
     
@@ -98,6 +145,43 @@ let inheritedTypeTests =
         | [item1;item2] -> 
             match item1,item2 with 
             | :? IBarcode,:? IColor -> 
+                pass()
+            | _ -> fail()    
+        | _ -> fail()     
+
+    testCase "EOrder with record items that has different types" <| fun _ -> 
+      useDatabase <| fun db ->
+        let item1 = 
+                {
+                    Id = 0
+                    Art = "art"
+                    Name = "name"
+                    Number = 1000
+                    Barcode = "7254301" 
+                }
+
+        let item2 = 
+            {
+                Id = 0
+                Art = "art"
+                Name = "name"
+                Number = 1000
+                Color = "red" 
+                Size = 39 
+            }
+
+        let eorder = { Id = 1; Items = [item1;item2];  OrderNumRange = "" }
+
+        let queryedEOrder =
+            db 
+            |> LiteRepository.insertItem eorder
+            |> LiteRepository.query<EOrder> 
+            |> LiteQueryable.first
+        
+        match queryedEOrder.Items with 
+        | [item1;item2] -> 
+            match item1,item2 with 
+            | :? IBarcode,:? IColor ->
                 pass()
             | _ -> fail()    
         | _ -> fail()     
