@@ -38,7 +38,7 @@ module Bson =
         doc
 
     let private fsharpJsonConverter = FSharpJsonConverter()
-    let private converters : JsonConverter[] = [| fsharpJsonConverter |]
+    let mutable internal converters : JsonConverter[] = [| fsharpJsonConverter |]
     
     /// Converts a typed entity (normally an F# record) to a BsonDocument. 
     /// Assuming there exists a field called `Id` or `id` of the record that will be mapped to `_id` in the BsonDocument, otherwise an exception is thrown.
