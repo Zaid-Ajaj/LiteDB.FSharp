@@ -310,7 +310,11 @@ type FSharpJsonConverter() =
             let inheritedType = inheritedTypeQuickAccessor.GetOrAdd((t.FullName,jsonFields),fun (_,jsonFields) ->
                 let findType (jsonFields: seq<string>) =
                     inheritedTypes |> Seq.maxBy (fun tp ->
-                        let fields = tp.GetFields() |> Seq.map (fun fd -> fd.Name)
+                        let fields = 
+                            let properties = tp.GetProperties() |> Array.filter(fun prop -> prop.CanWrite) |> Array.map (fun prop -> prop.Name)
+                            if properties.Length > 0 then properties
+                            else
+                                tp.GetFields() |> Array.map (fun fd -> fd.Name)
                         let fieldsLength = Seq.length fields
                         (jsonFields |> Seq.filter(fun jsonField ->
                             Seq.contains jsonField fields
