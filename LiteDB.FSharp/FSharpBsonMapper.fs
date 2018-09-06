@@ -4,7 +4,7 @@ open LiteDB
 open System
 open System.Collections.Generic
 open System.Linq.Expressions
-
+open Newtonsoft.Json
 
 type FSharpBsonMapper() = 
     inherit BsonMapper()
@@ -20,6 +20,9 @@ type FSharpBsonMapper() =
             HashSet [t2],
             ( fun _ types -> types.Add(t2) |> ignore; types )
         ) |> ignore
+
+    static member UseCustomJsonConverters(converters: JsonConverter[]) = 
+        Bson.converters <- converters   
 
     override self.ToObject(entityType: System.Type, entity: BsonDocument) = Bson.deserializeByType entity entityType 
     override self.ToObject<'t>(entity: BsonDocument) = Bson.deserialize<'t> entity
