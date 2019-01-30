@@ -30,7 +30,10 @@ module Bson =
 
     /// Reads a field from a BsonDocument as DateTime
     let readDate (key: string) (doc: BsonDocument) = 
-        doc.[key].AsDateTime
+        let date = doc.[key].AsDateTime
+        if date.Kind = DateTimeKind.Local 
+        then date.ToUniversalTime() 
+        else date
 
     /// Removes an entry (property) from a `BsonDocument` by the key of that property
     let removeEntryByKey (key:string) (doc: BsonDocument) = 
