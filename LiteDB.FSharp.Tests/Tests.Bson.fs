@@ -121,7 +121,7 @@ let bsonConversions =
       | otherwise -> fail()
 
     testCase "records with DateTime" <| fun _ ->
-      let time = DateTime(2017, 10, 15)
+      let time = DateTime(2017, 10, 15, 10, 15, 0)
       let record = { id = 1; created = time }
       let doc = Bson.serialize record
       match Bson.deserialize<RecordWithDateTime> doc with
@@ -129,17 +129,23 @@ let bsonConversions =
           Expect.equal 2017 timeCreated.Year "Year is mapped correctly"
           Expect.equal 10 timeCreated.Month "Month is mapped correctly"
           Expect.equal 15 timeCreated.Day "Day is mapped correctly"
+          Expect.equal 10 timeCreated.Hour "Hour is mapped correctly"
+          Expect.equal 15 timeCreated.Minute "Minute is mapped correctly"
+          Expect.equal 0 timeCreated.Second "Second is mapped correctly"
       | otherwise -> fail()
 
 
     testCase "Bson.readDate works" <| fun _ ->
-      let time = DateTime(2017, 10, 15)
+      let time = DateTime(2017, 10, 15, 10, 15, 0)
       let record = { id = 1; created = time }
       let doc = Bson.serialize record
       let deserialized = Bson.readDate "created" doc
       Expect.equal time.Year deserialized.Year "Year is correctly read"
       Expect.equal time.Month deserialized.Month "Month is correctly read"
       Expect.equal time.Day deserialized.Day "Day is correctly read"
+      Expect.equal time.Hour deserialized.Hour "Hour is mapped correctly"
+      Expect.equal time.Minute deserialized.Minute "Minute is mapped correctly"
+      Expect.equal time.Second deserialized.Second "Second is mapped correctly"
       
     testCase "records with unions" <| fun _ ->
       let fstRecord = { Id = 1; Union = One }
@@ -186,10 +192,10 @@ let bsonConversions =
 
     testCase "Reading Bson values as DateTime works" <| fun _ ->
     
-      let record = { id = 1; created = DateTime(2017, 10, 15) }
+      let record = { id = 1; created = DateTime(2017, 10, 15, 10, 20, 45) }
       let doc = Bson.serialize record 
       let createdField = Bson.read "created" doc
-      let created1 = createdField.AsDateTime
+      let created1 = Bson.readDate "created" doc
       let created2 = Bson.deserializeField<DateTime> createdField
       Expect.equal created1.Year 2017 "Year is deserialized correctly"
       Expect.equal created2.Year 2017 "Year is deserialized correctly"
@@ -197,6 +203,12 @@ let bsonConversions =
       Expect.equal created2.Month 10 "Month is deserialized correctly"
       Expect.equal created1.Day 15 "Day is deserialized correctly"
       Expect.equal created2.Day 15 "Day is deserialized correctly"
+      Expect.equal created1.Hour 10 "Hour is deserialized correctly"
+      Expect.equal created2.Hour 10 "Hour is deserialized correctly"
+      Expect.equal created1.Minute 20 "Minute is deserialized correctly"
+      Expect.equal created2.Minute 20 "Minute is deserialized correctly"
+      Expect.equal created1.Second 45 "Second is deserialized correctly"
+      Expect.equal created2.Second 45 "Second is deserialized correctly"
       
     testCase "Bson (de)serialization for options works" <| fun _ ->
       let record = { id = 1; generic = Some 1 }

@@ -246,7 +246,8 @@ type FSharpJsonConverter() =
         | true, Kind.DateTime ->
             let jsonObject = JObject.Load(reader)
             let dateValue = jsonObject.["$date"].Value<string>()
-            upcast DateTime.Parse(dateValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+            let date = DateTime.Parse(dateValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+            upcast (if date.Kind = DateTimeKind.Local then date.ToUniversalTime() else date)
         | true, Kind.Option ->
             let innerType = t.GetGenericArguments().[0]
             let innerType =
