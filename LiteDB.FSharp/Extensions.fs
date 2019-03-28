@@ -26,18 +26,18 @@ module Extensions =
             |> Seq.tryHead
 
         /// Tries to find a single document using a quoted query expression
-        member collection.tryFindOne<'t> (expr: Expr<'t -> bool>) : Option<'t> =
+        member collection.tryFindOne<'t> ([<ReflectedDefinition>] expr: Expr<'t -> bool>) : Option<'t> =
             let query = Query.createQueryFromExpr expr 
-            collection.TryFind(query)
+            collection.TryFind query
 
         /// Tries to find a single document using a quoted query expression, if no document matches, an exception is thrown
-        member collection.findOne<'t> (expr: Expr<'t -> bool>) : 't = 
-            match collection.tryFindOne expr with 
+        member collection.findOne<'t> ([<ReflectedDefinition>] expr: Expr<'t -> bool>) : 't = 
+            match collection.TryFind(Query.createQueryFromExpr expr) with 
             | Some item -> item 
             | None -> failwith "Could not find a single document that matches the given qeury"
         
         /// Searches the collection for documents that match the given query expression
-        member collection.findMany<'t> (expr: Expr<'t -> bool>) : seq<'t> = 
+        member collection.findMany<'t> ([<ReflectedDefinition>] expr: Expr<'t -> bool>) : seq<'t> = 
             let query = Query.createQueryFromExpr expr
             collection.Find(query)
 
@@ -77,7 +77,7 @@ module Extensions =
                     failwithf "Could not recognize the given expression \n%s\n, it should a simple lambda to select a property, for example: <@ fun record -> record.property @>" expression
     
         /// Remove all document based on quoted expression query. Returns removed document counts
-        member collection.delete<'t> (expr: Expr<'t -> bool>) =
+        member collection.delete<'t> ([<ReflectedDefinition>] expr: Expr<'t -> bool>) =
             let query = Query.createQueryFromExpr expr
             collection.Delete(query)
 

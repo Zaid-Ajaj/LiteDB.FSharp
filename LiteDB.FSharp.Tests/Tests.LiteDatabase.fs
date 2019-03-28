@@ -269,6 +269,17 @@ let liteDatabaseUsage =
                |> function | 1 -> pass()
                            | n -> fail()
 
+        testCase "Search by Exact Age works with auto-quoted expressions" <| fun _ ->
+           useDatabase <| fun db ->
+               let people = db.GetCollection<PersonDocument>("people")
+               let time = DateTime(2017, 10, 15)
+               let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+               people.Insert(person) |> ignore
+               
+               people.findMany (fun person -> person.Age = 10)
+               |> Seq.length 
+               |> function | 1 -> pass()
+                           | n -> fail()
 
         testCase "String.IsNullOrWhitespace works in query expression" <| fun _ ->
             useDatabase <| fun db ->
@@ -286,6 +297,16 @@ let liteDatabaseUsage =
                 values.Insert({ Id = 1; Name = "" }) |> ignore 
 
                 values.tryFindOne <@ fun value -> String.IsNullOrEmpty value.Name @> 
+                |> function 
+                    | Some { Id = 1; Name = "" } -> pass() 
+                    | _ -> fail()
+
+        testCase "String.IsNullOrEmpty works in auto-quoted query expression" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithStr>()
+                values.Insert({ Id = 1; Name = "" }) |> ignore 
+
+                values.tryFindOne (fun value -> String.IsNullOrEmpty value.Name)
                 |> function 
                     | Some { Id = 1; Name = "" } -> pass() 
                     | _ -> fail()
@@ -319,7 +340,23 @@ let liteDatabaseUsage =
                 |> Seq.length
                 |> function
                     | 1 -> pass()
-                    | _ -> fail()                  
+                    | _ -> fail() 
+
+        testCase "String.Contains works in conposite auto-quoted query expression" <| fun _ ->
+            useDatabase <| fun db ->
+                let values = db.GetCollection<RecordWithStr>()
+                values.Insert({ Id = 1; Name = "Friday" }) |> ignore 
+
+                values.tryFindOne (fun value -> value.Name.Contains("Fri") && value.Name.Contains("Hello")) 
+                |> function 
+                    | None -> pass() 
+                    | _ -> fail()
+
+                values.findMany (fun value -> value.Name.Contains("Fri") || value.Name.Contains("Hello"))
+                |> Seq.length
+                |> function
+                    | 1 -> pass()
+                    | _ -> fail()                     
 
         testCase "Search between time intervals using Query.And" <| fun _ ->
             useDatabase <| fun db ->
@@ -345,6 +382,19 @@ let liteDatabaseUsage =
 
                 people.findMany <@ fun person -> person.DateAdded > DateTime(2017, 01, 01) 
                                               && person.DateAdded < DateTime(2018, 01, 01) @>
+                |> Seq.length 
+                |> function | 1 -> pass()
+                            | n -> fail()
+
+        testCase "Search between time intervals using auto-quoted expressions" <| fun _ ->
+            useDatabase <| fun db ->
+                let people = db.GetCollection<PersonDocument>("people")
+                let time = DateTime(2017, 10, 15)
+                let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+                people.Insert(person) |> ignore
+
+                people.findMany (fun person -> person.DateAdded > DateTime(2017, 01, 01) 
+                                            && person.DateAdded < DateTime(2018, 01, 01))
                 |> Seq.length 
                 |> function | 1 -> pass()
                             | n -> fail()
