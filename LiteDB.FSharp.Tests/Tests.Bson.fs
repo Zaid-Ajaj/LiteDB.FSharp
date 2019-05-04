@@ -27,6 +27,13 @@ let bsonConversions =
       Expect.equal 2 doc.Keys.Count "Generated BSON document has 2 keys"      
       Expect.equal (Bson.readInt "_id" doc) 1 "_id is serialized correctly"
       Expect.equal (Bson.readInt "age" doc) 19 "age property is serialized correctly"
+    
+    testCase "Members are ignored when persisted" <| fun _ ->
+      let record : RecWithMember = { Id = 1; Name = "John" }
+      let doc = Bson.serialize record 
+      Expect.equal 2 doc.Keys.Count "Generated BSON document has 2 keys"
+      Expect.isTrue (doc.ContainsKey "_id") "Document has _id key"
+      Expect.isTrue (doc.ContainsKey "Name") "Document has name key"
 
     testCase "simple records with lowercase id" <| fun _ ->
       let record = { id = 1; age = 19 }

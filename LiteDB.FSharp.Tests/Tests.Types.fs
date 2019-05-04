@@ -54,6 +54,14 @@ type IItem =
     abstract member Number : int
 
 
+type RecWithMember = { 
+    Id: int 
+    Name: string    
+}
+with member this.Ignored() = sprintf "%d %s" this.Id this.Name 
+     member this.IgnoredToo = sprintf "%d %s" this.Id this.Name
+
+
 [<CLIMutable>]
 type Company=
   { Id: int
