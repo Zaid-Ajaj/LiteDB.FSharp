@@ -9,6 +9,8 @@ open LiteDB.FSharp.Extensions
 
 open Tests.Types
 open Expecto.Logging
+open LiteDB
+open System.Collections.Generic
 
 type MaritalStatus = Single | Married
 
@@ -29,6 +31,11 @@ type NestedRecord = { Inner : PersonDocument }
 type RecordWithOptionalDate = {
     Id : int
     Released : Option<DateTime>
+}
+
+type MutableBoolean = {
+    Id: int
+    mutable MutableBoolean : bool
 }
 
 type RecordWithOptionalRecord = {
@@ -52,6 +59,40 @@ let useDatabase (f: LiteDatabase -> unit) =
 
 let liteDatabaseUsage = 
     testList "LiteDatabase usage" [
+
+        testCase "Persisting documents with mutable fields should work" <| fun _ -> 
+            useDatabase <| fun db ->
+                let records = db.GetCollection<MutableBoolean>("booleans")
+                records.Insert { Id = 1; MutableBoolean = false } |> ignore 
+                records.FindAll() 
+                |> Seq.toList
+                |> function 
+                    | [ { Id = 1; MutableBoolean = false } ] -> pass()
+                    | otherwise -> fail()
+
+        testCase "Uninitialized values are populated with default values" <| fun _ ->
+            useDatabase <| fun db ->
+                let records = db.GetCollection<BsonDocument>("documents")
+                let initialDoc = BsonDocument()
+                initialDoc.Add(KeyValuePair("_id", BsonValue(1)))
+                // adding { _id: 1 }
+                records.Insert initialDoc |> ignore
+                // reading { Id: int; HasValue: bool } where HasValue should be deserialized to false by default
+                let typedRecords = db.GetCollection<RecordWithBoolean>("documents")
+                let firstRec = typedRecords.FindAll() |> Seq.head
+                Expect.equal 1 firstRec.Id "Deserialized ID is correct"
+                Expect.equal false firstRec.HasValue "Deserialized boolean has default value of false"
+
+        testCase "Inserting typed document then reading it as BsonDocument should work" <| fun _ ->
+            useDatabase <| fun db ->
+                let typedRecords = db.GetCollection<RecordWithBoolean>("booleans") 
+                typedRecords.Insert { Id = 1; HasValue = true } |> ignore 
+                
+                let documents = db.GetCollection<BsonDocument>("booleans")
+                let firstDoc = documents.FindAll() |> Seq.head  
+                Expect.equal (Bson.readInt "_id" firstDoc) 1 "Id of BsonDocument is 1"
+                Expect.equal (Bson.readBool "HasValue" firstDoc) true "Id of BsonDocument is 1"
+
         testCase "Inserting and FindById work" <| fun _ ->
             useDatabase <| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")

@@ -5,6 +5,7 @@ open System
 open System.Collections.Generic
 open System.Linq.Expressions
 open Newtonsoft.Json
+open LiteDB
 
 type FSharpBsonMapper() = 
     inherit BsonMapper()
@@ -28,6 +29,9 @@ type FSharpBsonMapper() =
     override self.ToObject<'t>(entity: BsonDocument) = Bson.deserialize<'t> entity
     override self.ToDocument<'t>(entity: 't) = 
         //Add DBRef Feature :set field value with $ref  
+        if typeof<'t>.GUID = typeof<BsonDocument>.GUID 
+        then entity |> unbox<BsonDocument>
+        else
         let withEntityMap (doc:BsonDocument)=
             let mapper = entityMappers.Item (entity.GetType())
             for memberMapper in mapper.Members do

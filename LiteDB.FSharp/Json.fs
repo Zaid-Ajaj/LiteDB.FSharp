@@ -41,6 +41,7 @@ type Kind =
     | Binary = 12
     | ObjectId = 13
     | Double = 14
+    | Record = 15
 
 /// Helper for serializing map/dict with non-primitive, non-string keys such as unions and records.
 /// Performs additional serialization/deserialization of the key object and uses the resulting JSON
@@ -86,6 +87,39 @@ module private Cache =
     let inheritedTypeQuickAccessor = ConcurrentDictionary<string * list<string>,Type>()
 
 open Cache
+open System
+
+[<RequireQualifiedAccess>]
+module DefaultValue = 
+    type DefaultGen<'t>() = 
+        member this.GetDefault() =
+            let typeSignature = typeof<'t>.GUID
+            if typeSignature = typeof<int>.GUID
+            then unbox<'t> 0
+            elif typeSignature = typeof<string>.GUID 
+            then unbox<'t> ""
+            elif typeSignature = typeof<int64>.GUID 
+            then unbox<'t> 0L 
+            elif typeSignature = typeof<bigint>.GUID 
+            then unbox<'t> 0I
+            elif typeSignature = typeof<bool>.GUID 
+            then unbox<'t> false
+            elif typeSignature = typeof<Guid>.GUID 
+            then unbox<'t> Guid.Empty
+            elif typeSignature = typeof<DateTime>.GUID
+            then unbox<'t> (DateTime(1970, 1, 1, 0, 0, 0))
+            elif typeof<'t>.Name = "FSharpOption`1"
+            then unbox Option<'t>.None
+            elif typeSignature = typeof<float>.GUID 
+            then unbox 0.0
+            else 
+            Unchecked.defaultof<'t>
+
+    let fromType (inputType: System.Type) : obj = 
+        let genericDefaultGenType = typedefof<DefaultGen<_>>.MakeGenericType(inputType)
+        let defaultGenerator = Activator.CreateInstance(genericDefaultGenType)
+        let getDefaultMethod = genericDefaultGenType.GetMethods() |> Seq.filter (fun meth -> meth.Name = "GetDefault") |> Seq.head
+        getDefaultMethod.Invoke(defaultGenerator, [||])
 
 /// Converts F# options, tuples and unions to a format understandable
 /// A derivative of Fable's JsonConverter. Code adapted from Lev Gorodinski's original.
@@ -136,6 +170,8 @@ type FSharpJsonConverter() =
                 then Kind.Tuple
                 elif (FSharpType.IsUnion t && t.Name <> "FSharpList`1")
                 then Kind.Union
+                elif (FSharpType.IsRecord t)
+                then Kind.Record
                 elif t.IsGenericType
                     && (t.GetGenericTypeDefinition() = typedefof<Map<_,_>> || t.GetGenericTypeDefinition() = typedefof<Dictionary<_,_>>)
                     && t.GetGenericArguments().[0] <> typeof<string>
@@ -212,6 +248,15 @@ type FSharpJsonConverter() =
                 let mapSerializer = typedefof<MapSerializer<_,_>>.MakeGenericType mapTypes
                 let mapSerializeMethod = mapSerializer.GetMethod("Serialize")
                 mapSerializeMethod.Invoke(null, [| value; writer; serializer |]) |> ignore
+            | true, Kind.Record ->
+                let fields = FSharpType.GetRecordFields(t)
+                writer.WriteStartObject()
+                for fieldType in fields do
+                    let fieldValue = FSharpValue.GetRecordField(value, fieldType)
+                    writer.WritePropertyName(fieldType.Name)
+                    serializer.Serialize(writer, fieldValue)
+                writer.WriteEndObject()
+                
             | true, _ ->                
                 serializer.Serialize(writer, value)
 
@@ -327,6 +372,19 @@ type FSharpJsonConverter() =
             // printfn "found inherited type %s with jsonFields %A" inheritedType.FullName jsonFields
             jObject.ToObject(inheritedType,serializer)
 
+        | true, Kind.Record ->
+            let recordJson = JObject.Load(reader)
+            let recordFields = FSharpType.GetRecordFields(t)
+            let recordValues = Array.init recordFields.Length <| fun index ->
+                let recordField = recordFields.[index]
+                let fieldType = recordField.PropertyType
+                let fieldName = recordField.Name
+                match recordJson.TryGetValue fieldName with 
+                | true, fieldValueJson -> fieldValueJson.ToObject(fieldType, serializer)
+                | false, _ -> DefaultValue.fromType fieldType
+            
+            FSharpValue.MakeRecord(t, recordValues)
+            
         | true, _ ->
             serializer.Deserialize(reader, t)
 
