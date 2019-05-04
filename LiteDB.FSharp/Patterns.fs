@@ -154,13 +154,17 @@ module Patterns =
        | Call(_, LogicOp "<=", [PropertyGet(_, propInfo, []); ProvidedValue(value)]) ->
            Some (propInfo.Name, value)
        | otherwise -> None
+
+    let (|Boolean|_|) = tryUnbox<bool> 
+
+    let (|LiteralBooleanValue|_|) = function 
+        | Value(Boolean(value), _) -> Some value 
+        | otherwise -> None
      
     let (|And|_|) = function 
-       | IfThenElse (left, right, Value(value, _)) when unbox<bool> value = false -> 
-            Some (left, right) 
+       | IfThenElse (left, right, Value(Boolean(false), _)) ->  Some (left, right) 
        | otherwise -> None
 
     let (|Or|_|) = function 
-       | IfThenElse (left, Value(value, _), right) when unbox<bool> value -> 
-            Some (left, right) 
+       | IfThenElse (left, Value(Boolean(true), _), right) -> Some (left, right) 
        | otherwise -> None

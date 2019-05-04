@@ -11,6 +11,8 @@ open Tests.Types
 open Expecto.Logging
 open LiteDB
 open System.Collections.Generic
+open LiteDB
+open LiteDB
 
 type MaritalStatus = Single | Married
 
@@ -121,6 +123,16 @@ let liteDatabaseUsage =
                     Expect.equal 15 x.Day "Day is mapped correctly"
                 | otherwise -> fail()
 
+        testCase "Query expression with literal boolean value is supported" <| fun _ ->
+            useDatabase <| fun db ->
+                let docs = db.GetCollection<BsonDocument>("docs")
+                let doc = BsonDocument()
+                doc.Add(KeyValuePair("_id", BsonValue(42)))
+                docs.Insert doc |> ignore 
+                let inserted = docs.findOne(fun doc -> true) 
+                Expect.equal 1 inserted.Keys.Count "Doc has one key (_id)"
+                Expect.equal 42 (Bson.readInt "_id" inserted) "_id = 42"
+                
         testCase "Documents with optional DateTime = Some can be used" <| fun _ ->
             useDatabase <| fun db -> 
                 let docs = db.GetCollection<RecordWithOptionalDate>()

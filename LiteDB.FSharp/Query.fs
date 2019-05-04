@@ -43,6 +43,9 @@ module Query =
         | Patterns.PropertyNotEqual (("Id" | "id" | "ID"), value) -> 
             Query.Not(Query.EQ("_id", BsonValue(value)))
 
+        | Patterns.LiteralBooleanValue value -> 
+            Query.Where("_id", fun id -> value)
+
         | Patterns.ProperyGreaterThan (propName, value) ->
             Query.GT(propName, BsonValue(value))
 
