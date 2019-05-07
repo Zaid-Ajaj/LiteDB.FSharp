@@ -12,13 +12,22 @@ module Query =
         match expr with 
         | Patterns.PropertyEqual (("Id" | "id" | "ID"), value) -> 
             Query.EQ("_id", BsonValue(value)) 
-        
-        | Patterns.PropertyEqual (propName, value) when FSharpType.IsUnion (value.GetType()) -> 
-            Query.EQ(propName, Bson.serializeField value) 
 
-        | Patterns.PropertyEqual (propName, value) when FSharpType.IsRecord (value.GetType()) ->
-            Query.EQ(propName, Bson.serializeField value) 
-        
+        | Patterns.PropertyNotEqual (("Id" | "id" | "ID"), value) -> 
+            Query.Not(Query.EQ("_id", BsonValue(value)))
+
+        | Patterns.ProperyGreaterThan (("Id" | "id" | "ID"), value) ->
+            Query.GT("_id", BsonValue(value))
+
+        | Patterns.ProperyGreaterThanOrEqual (("Id" | "id" | "ID"), value) ->
+            Query.GTE("_id", BsonValue(value)) 
+
+        | Patterns.PropertyLessThan (("Id" | "id" | "ID"), value) ->
+            Query.LT("_id", BsonValue(value)) 
+
+        | Patterns.PropertyLessThanOrEqual (("Id" | "id" | "ID"), value) ->
+             Query.LTE("_id", BsonValue(value)) 
+
         | Patterns.StringContains (propName, value) -> 
             Query.Where(propName, fun bsonValue ->
                 bsonValue
@@ -37,11 +46,17 @@ module Query =
                 |> Bson.deserializeField<string>
                 |> String.IsNullOrEmpty)
            
+        | Patterns.PropertyEqual (propName, value) when FSharpType.IsUnion (value.GetType()) -> 
+            Query.EQ(propName, Bson.serializeField value)
+
+         | Patterns.PropertyEqual (propName, value) when FSharpType.IsRecord (value.GetType()) ->
+            Query.EQ(propName, Bson.serializeField value) 
+
         | Patterns.PropertyEqual (propName, value) -> 
             Query.EQ(propName, BsonValue(value)) 
 
-        | Patterns.PropertyNotEqual (("Id" | "id" | "ID"), value) -> 
-            Query.Not(Query.EQ("_id", BsonValue(value)))
+        | Patterns.PropertyNotEqual (propName, value) -> 
+            Query.Not(Query.EQ(propName, BsonValue(value)))
 
         | Patterns.ProperyGreaterThan (propName, value) ->
             Query.GT(propName, BsonValue(value))
