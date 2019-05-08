@@ -236,6 +236,18 @@ let liteDatabaseUsage =
                 |> function | 1 -> pass()
                             | n -> fail()
 
+        testCase "Search ID by compound query expression works" <| fun _ ->
+            useDatabase <| fun db ->
+                let people = db.GetCollection<PersonDocument>("people")
+                let time = DateTime(2017, 10, 15)
+                let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+                people.Insert(person) |> ignore
+
+                people.findMany <@ fun person -> person.Id > 0 @> 
+                |> Seq.length 
+                |> function | 1 -> pass()
+                            | n -> fail()
+
         testCase "Extracting values from getter works" <| fun _ ->
             useDatabase <| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
