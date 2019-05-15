@@ -29,7 +29,7 @@ type FSharpBsonMapper() =
     override self.ToObject<'t>(entity: BsonDocument) = Bson.deserialize<'t> entity
     override self.ToDocument<'t>(entity: 't) = 
         //Add DBRef Feature :set field value with $ref  
-        if typeof<'t>.GUID = typeof<BsonDocument>.GUID 
+        if typeof<'t>.FullName = typeof<BsonDocument>.FullName 
         then entity |> unbox<BsonDocument>
         else
         let withEntityMap (doc:BsonDocument)=
