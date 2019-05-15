@@ -157,7 +157,7 @@ module Bson =
     /// Converts a BsonDocument to a typed entity given the document the type of the CLR entity.
     let deserialize<'t>(entity: BsonDocument) = 
         // if the type is already a BsonDocument, then do not deserialize, just return as is.
-        if typeof<'t>.GUID = typeof<BsonDocument>.GUID
+        if typeof<'t>.FullName = typeof<BsonDocument>.FullName
         then 
             entity |> unbox<'t>
         else

@@ -93,24 +93,24 @@ open System
 module DefaultValue = 
     type DefaultGen<'t>() = 
         member this.GetDefault() =
-            let typeSignature = typeof<'t>.GUID
-            if typeSignature = typeof<int>.GUID
+            let typeSignature = typeof<'t>.FullName
+            if typeSignature = typeof<int>.FullName
             then unbox<'t> 0
-            elif typeSignature = typeof<string>.GUID 
+            elif typeSignature = typeof<string>.FullName 
             then unbox<'t> ""
-            elif typeSignature = typeof<int64>.GUID 
+            elif typeSignature = typeof<int64>.FullName 
             then unbox<'t> 0L 
-            elif typeSignature = typeof<bigint>.GUID 
+            elif typeSignature = typeof<bigint>.FullName 
             then unbox<'t> 0I
-            elif typeSignature = typeof<bool>.GUID 
+            elif typeSignature = typeof<bool>.FullName 
             then unbox<'t> false
-            elif typeSignature = typeof<Guid>.GUID 
+            elif typeSignature = typeof<Guid>.FullName 
             then unbox<'t> Guid.Empty
-            elif typeSignature = typeof<DateTime>.GUID
+            elif typeSignature = typeof<DateTime>.FullName
             then unbox<'t> (DateTime(1970, 1, 1, 0, 0, 0))
             elif typeof<'t>.Name = "FSharpOption`1"
             then unbox Option<'t>.None
-            elif typeSignature = typeof<float>.GUID 
+            elif typeSignature = typeof<float>.FullName 
             then unbox 0.0
             else 
             Unchecked.defaultof<'t>
