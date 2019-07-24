@@ -103,7 +103,13 @@ module Bson =
                         |> withKeyValue key id
                         |> removeEntryByKey "_id"
                         |> (ignore >> continueToNext)
-                    
+
+                    | "$id", id ->
+                        entity
+                        |> withKeyValue key id
+                        |> removeEntryByKey "$id"
+                        |> (ignore >> continueToNext)
+
                     |_, (:? BsonDocument as bson) ->
                         // if property is nested record that resulted from DbRef then
                         // also re-write the transformed _id key property back to original Id or id
