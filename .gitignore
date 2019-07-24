@@ -17,3 +17,4 @@ dist
 .vscode
 LiteDB.FSharp.userprefs
 LiteDB.FSharp.sln.DotSettings.user
+**/*.ionide/**
