@@ -41,7 +41,14 @@ let dbRefTests =
             | _ -> fail()            
        
         
-    
+    testCase "CLIType DBRef token without include Test" <| fun _ -> 
+      useDatabase <| fun db ->
+        let company = {Id = 1; Name = "InitializedCompanyName"}  
+        let order = { Id = 1; Company = company; EOrders = []}
+        db.Insert(company)
+        db.Insert(order)
+        let m = db.Query<Order>().FirstOrDefault()
+        Expect.equal m.Company.Id 1 "CLIType DBRef NestedId token Test Corrently"   
     
     testCase "CLIType DBRef NestedId token Test" <| fun _ -> 
       useDatabase <| fun db ->
