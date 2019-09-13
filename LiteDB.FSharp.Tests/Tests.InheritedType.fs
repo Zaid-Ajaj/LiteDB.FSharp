@@ -101,6 +101,16 @@ type Item2OfRecord =
 
 
 let useDatabase (f: LiteRepository -> unit) = 
+    let mapper = new FSharpBsonMapper()
+    use memoryStream = new MemoryStream()
+    FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1>()
+    FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2>()
+    FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1OfRecord>()
+    FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2OfRecord>()
+    use db = new LiteRepository(memoryStream, mapper)
+    f db
+    
+let useTypeShapeDatabase (f: LiteRepository -> unit) = 
     let mapper = new TypeShapeMapper()
     use memoryStream = new MemoryStream()
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1>()
@@ -108,7 +118,7 @@ let useDatabase (f: LiteRepository -> unit) =
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1OfRecord>()
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2OfRecord>()
     use db = new LiteRepository(memoryStream, mapper)
-    f db  
+    f db 
     
 let inheritedTypeTests =
   testList "InheritedTypeTests Tests" [

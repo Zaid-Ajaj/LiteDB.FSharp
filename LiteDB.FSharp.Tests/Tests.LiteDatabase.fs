@@ -55,11 +55,16 @@ let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
 let useDatabase (f: LiteDatabase -> unit) = 
+    let mapper = FSharpBsonMapper()
+    use memoryStream = new MemoryStream()
+    use db = new LiteDatabase(memoryStream, mapper)
+    f db
+    
+let useTypeShapeDatabase (f: LiteDatabase -> unit) = 
     let mapper = TypeShapeMapper()
     use memoryStream = new MemoryStream()
     use db = new LiteDatabase(memoryStream, mapper)
     f db
-
 let liteDatabaseUsage = 
     testList "LiteDatabase usage" [
 

@@ -13,16 +13,24 @@ open LiteDB.FSharp.Extensions
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
-let useDatabase (f: LiteRepository -> unit) = 
+let useTypeShapeDatabase (f: LiteRepository -> unit) = 
     let mapper = TypeShapeMapper()
     mapper.DbRef<Order,_>(fun c -> c.Company)
     mapper.DbRef<Order,_>(fun c -> c.EOrders)
     use memoryStream = new MemoryStream()
     use db = new LiteRepository(memoryStream, mapper)
-    f db  
+    f db
+    
+let useDatabase (f: LiteRepository -> unit) = 
+    let mapper = FSharpBsonMapper()
+    mapper.DbRef<Order,_>(fun c -> c.Company)
+    mapper.DbRef<Order,_>(fun c -> c.EOrders)
+    use memoryStream = new MemoryStream()
+    use db = new LiteRepository(memoryStream, mapper)
+    f db
     
 let dbRefTests =
-  testList "DBRef Tests" [
+  testList "DBRef Tests"  [
   
     testCase "CLIType DBRef Token Test" <| fun _ -> 
       useDatabase <| fun db ->
