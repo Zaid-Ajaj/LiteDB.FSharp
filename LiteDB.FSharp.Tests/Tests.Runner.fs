@@ -3,6 +3,7 @@
 open Expecto
 open Expecto.Logging
 open LiteDB.FSharp
+open LiteDB.FSharp.Experimental
 open Tests.Bson
 open Tests.LiteDatabase
 open Tests.DBRef
@@ -28,15 +29,26 @@ let defaultValueTests =
             Expect.equal "" value "An empty string is the default string"
     ]
 
-let liteDbTests = 
+let liteDbTests mapper=
     testList "All tests" [  
         defaultValueTests
         bsonConversions
-        liteDatabaseUsage
-        dbRefTests
-        inheritedTypeTests
+        liteDatabaseUsage mapper
+        dbRefTests mapper
+        inheritedTypeTests mapper
     ]
 
 
 [<EntryPoint>]
-let main argv = runTests testConfig liteDbTests
+let main argv =
+    let tests=
+         [
+         FSharpBsonMapper()
+         TypeShapeMapper() :> FSharpBsonMapper
+         ]|>List.map liteDbTests
+    tests |> List.map(fun t ->runTests testConfig t)|>List.tryFind (fun r->r<>0)|>Option.defaultValue 0
+    
+     
+     
+     
+    

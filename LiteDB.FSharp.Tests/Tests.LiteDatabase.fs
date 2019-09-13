@@ -13,6 +13,7 @@ open LiteDB
 open System.Collections.Generic
 open LiteDB
 open LiteDB
+open LiteDB.FSharp.Experimental
 
 type MaritalStatus = Single | Married
 
@@ -53,17 +54,17 @@ type RecOptGuid = {
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
-let useDatabase (f: LiteDatabase -> unit) = 
-    let mapper = FSharpBsonMapper()
+let useDatabase mapper (f: LiteDatabase -> unit) = 
     use memoryStream = new MemoryStream()
     use db = new LiteDatabase(memoryStream, mapper)
     f db
+    
 
-let liteDatabaseUsage = 
+let liteDatabaseUsage mapper= 
     testList "LiteDatabase usage" [
 
         testCase "Persisting documents with mutable fields should work" <| fun _ -> 
-            useDatabase <| fun db ->
+            useDatabase mapper <| fun db ->
                 let records = db.GetCollection<MutableBoolean>("booleans")
                 records.Insert { Id = 1; MutableBoolean = false } |> ignore 
                 records.FindAll() 
@@ -73,7 +74,7 @@ let liteDatabaseUsage =
                     | otherwise -> fail()
 
         testCase "Uninitialized values are populated with default values" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let records = db.GetCollection<BsonDocument>("documents")
                 let initialDoc = BsonDocument()
                 initialDoc.Add(KeyValuePair("_id", BsonValue(1)))
@@ -86,7 +87,7 @@ let liteDatabaseUsage =
                 Expect.equal false firstRec.HasValue "Deserialized boolean has default value of false"
 
         testCase "Inserting typed document then reading it as BsonDocument should work" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let typedRecords = db.GetCollection<RecordWithBoolean>("booleans") 
                 typedRecords.Insert { Id = 1; HasValue = true } |> ignore 
                 
@@ -96,7 +97,7 @@ let liteDatabaseUsage =
                 Expect.equal (Bson.readBool "HasValue" firstDoc) true "Id of BsonDocument is 1"
 
         testCase "Inserting and FindById work" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; DateAdded = time; Status = Single }
@@ -110,7 +111,7 @@ let liteDatabaseUsage =
                 | otherwise -> fail()
 
         testCase "Inserting and findOne with quoted expressions work" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; DateAdded = time; Status = Single }
@@ -124,7 +125,7 @@ let liteDatabaseUsage =
                 | otherwise -> fail()
 
         testCase "Query expression with literal boolean value is supported" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let docs = db.GetCollection<BsonDocument>("docs")
                 let doc = BsonDocument()
                 doc.Add(KeyValuePair("_id", BsonValue(42)))
@@ -134,7 +135,7 @@ let liteDatabaseUsage =
                 Expect.equal 42 (Bson.readInt "_id" inserted) "_id = 42"
                 
         testCase "Documents with optional DateTime = Some can be used" <| fun _ ->
-            useDatabase <| fun db -> 
+            useDatabase mapper<| fun db -> 
                 let docs = db.GetCollection<RecordWithOptionalDate>()
                 docs.Insert { Id = 1; Released = Some DateTime.Now } |> ignore 
                 docs.FindAll()
@@ -147,7 +148,7 @@ let liteDatabaseUsage =
                         | _ -> fail() 
 
         testCase "Documents with optional Guid = Some can be used" <| fun _ ->
-            useDatabase <| fun db -> 
+            useDatabase mapper<| fun db -> 
                 let docs = db.GetCollection<RecOptGuid>()
                 docs.Insert { Id = 1; OtherId = Some (Guid.NewGuid()) } |> ignore 
                 docs.FindAll()
@@ -160,7 +161,7 @@ let liteDatabaseUsage =
                         | _ -> fail() 
 
         testCase "Documents with optional Guid = None can be used" <| fun _ ->
-            useDatabase <| fun db -> 
+            useDatabase mapper<| fun db -> 
                 let docs = db.GetCollection<RecOptGuid>()
                 docs.Insert { Id = 1; OtherId = None } |> ignore 
                 docs.FindAll()
@@ -173,7 +174,7 @@ let liteDatabaseUsage =
                         | _ -> fail() 
 
         testCase "Documents with optional DateTime = None can be used" <| fun _ ->
-            useDatabase <| fun db -> 
+            useDatabase mapper<| fun db -> 
                 let docs = db.GetCollection<RecordWithOptionalDate>()
                 docs.Insert { Id = 1; Released = None } |> ignore 
                 docs.FindAll()
@@ -186,7 +187,7 @@ let liteDatabaseUsage =
                         | _ -> fail() 
 
         testCase "Documents with optional Record = Some can be used" <| fun _ ->
-            useDatabase <| fun db -> 
+            useDatabase mapper<| fun db -> 
                 let docs = db.GetCollection<RecordWithOptionalRecord>()
                 docs.Insert { Id = 1; Record = Some {Id = 1; Name = "Name"} } |> ignore 
                 docs.FindAll()
@@ -199,7 +200,7 @@ let liteDatabaseUsage =
                         | _ -> fail()             
 
         testCase "TryFindById extension works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; DateAdded = time; Status = Single }
@@ -214,7 +215,7 @@ let liteDatabaseUsage =
                 | None -> pass()
 
         testCase "Search by Query.Between integer field works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -226,7 +227,7 @@ let liteDatabaseUsage =
                             | n -> fail()
 
         testCase "Search by compound query expression works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -237,7 +238,7 @@ let liteDatabaseUsage =
                             | n -> fail()
 
         testCase "Search ID by compound query expression works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -249,7 +250,7 @@ let liteDatabaseUsage =
                             | n -> fail()
 
         testCase "Extracting values from getter works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let mike = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -261,7 +262,7 @@ let liteDatabaseUsage =
 
 
         testCase "Extracting values from nested getter works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let mike = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -273,7 +274,7 @@ let liteDatabaseUsage =
                             | n -> fail()
 
         testCase "TryFind extension method works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                let people = db.GetCollection<PersonDocument>("people")
                let time = DateTime(2017, 10, 15)
                let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -286,7 +287,7 @@ let liteDatabaseUsage =
                | otherwise -> fail()
 
         testCase "tryFindOne works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                let people = db.GetCollection<PersonDocument>("people")
                let time = DateTime(2017, 10, 15)
                let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -299,7 +300,7 @@ let liteDatabaseUsage =
                | otherwise -> fail()
 
         testCase "Search by Exact Name works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -311,7 +312,7 @@ let liteDatabaseUsage =
                             | n -> fail()
 
         testCase "Search by Exact Age works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -323,7 +324,7 @@ let liteDatabaseUsage =
                             | n -> fail()
 
         testCase "Search by Exact Age works with expressions" <| fun _ ->
-           useDatabase <| fun db ->
+           useDatabase mapper<| fun db ->
                let people = db.GetCollection<PersonDocument>("people")
                let time = DateTime(2017, 10, 15)
                let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -335,7 +336,7 @@ let liteDatabaseUsage =
                            | n -> fail()
 
         testCase "Search by Exact Age works with auto-quoted expressions" <| fun _ ->
-           useDatabase <| fun db ->
+           useDatabase mapper<| fun db ->
                let people = db.GetCollection<PersonDocument>("people")
                let time = DateTime(2017, 10, 15)
                let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -347,7 +348,7 @@ let liteDatabaseUsage =
                            | n -> fail()
 
         testCase "String.IsNullOrWhitespace works in query expression" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithStr>()
                 values.Insert({ Id = 1; Name = "" }) |> ignore 
 
@@ -357,7 +358,7 @@ let liteDatabaseUsage =
                     | _ -> fail()
 
         testCase "String.IsNullOrEmpty works in query expression" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithStr>()
                 values.Insert({ Id = 1; Name = "" }) |> ignore 
 
@@ -367,7 +368,7 @@ let liteDatabaseUsage =
                     | _ -> fail()
 
         testCase "String.IsNullOrEmpty works in auto-quoted query expression" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithStr>()
                 values.Insert({ Id = 1; Name = "" }) |> ignore 
 
@@ -377,7 +378,7 @@ let liteDatabaseUsage =
                     | _ -> fail()
 
         testCase "String.Contains works in query expression" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithStr>()
                 values.Insert({ Id = 1; Name = "Friday" }) |> ignore 
 
@@ -392,7 +393,7 @@ let liteDatabaseUsage =
                     | _ -> fail()
 
         testCase "String.Contains works in conposite query expression" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithStr>()
                 values.Insert({ Id = 1; Name = "Friday" }) |> ignore 
 
@@ -408,7 +409,7 @@ let liteDatabaseUsage =
                     | _ -> fail() 
 
         testCase "String.Contains works in conposite auto-quoted query expression" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithStr>()
                 values.Insert({ Id = 1; Name = "Friday" }) |> ignore 
 
@@ -424,7 +425,7 @@ let liteDatabaseUsage =
                     | _ -> fail()                     
 
         testCase "Search between time intervals using Query.And" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -439,7 +440,7 @@ let liteDatabaseUsage =
                             | n -> fail()
 
         testCase "Search between time intervals using quoted expressions" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -452,7 +453,7 @@ let liteDatabaseUsage =
                             | n -> fail()
 
         testCase "Search between time intervals using auto-quoted expressions" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -465,7 +466,7 @@ let liteDatabaseUsage =
                             | n -> fail()
 
         testCase "Search between time intervals using Query.Between" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -480,7 +481,7 @@ let liteDatabaseUsage =
                             | n -> fail()   
 
         testCase "Search by using expression on boolean properties" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithBoolean>()
                 values.Insert({ Id = 1; HasValue = true }) |> ignore 
                 let foundItem = values.tryFindOne <@ fun item -> item.HasValue @>  
@@ -489,7 +490,7 @@ let liteDatabaseUsage =
                 | None -> fail() 
 
         testCase "Search by expression OR works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithBoolean>()
                 values.Insert({ Id = 1; HasValue = true }) |> ignore 
                 values.Insert({ Id = 2; HasValue = false }) |> ignore 
@@ -501,7 +502,7 @@ let liteDatabaseUsage =
                     | _ -> fail()
 
         testCase "Search by created where expression" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithBoolean>()
                 values.Insert({ Id = 1; HasValue = true }) |> ignore 
                 values.Insert({ Id = 2; HasValue = false }) |> ignore 
@@ -514,7 +515,7 @@ let liteDatabaseUsage =
                     | _ -> fail()
 
         testCase "Search by created where expression and id selector" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithBoolean>()
                 values.Insert({ Id = 1; HasValue = true }) |> ignore 
                 values.Insert({ Id = 2; HasValue = false }) |> ignore 
@@ -527,7 +528,7 @@ let liteDatabaseUsage =
                     | _ -> fail()
 
         testCase "Search by expression OR works with NOT operator" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let values = db.GetCollection<RecordWithBoolean>()
                 values.Insert({ Id = 1; HasValue = true }) |> ignore 
                 values.Insert({ Id = 2; HasValue = false }) |> ignore 
@@ -539,7 +540,7 @@ let liteDatabaseUsage =
                     | _ -> fail()
 
         testCase "Search by discriminated unions works" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -552,7 +553,7 @@ let liteDatabaseUsage =
                 | otherwise -> fail()   
 
         testCase "Search by discriminated unions using expressions" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let person = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
@@ -563,7 +564,7 @@ let liteDatabaseUsage =
                 | otherwise -> fail()  
 
         testCase "Full custom search works by BsonValue deserialization" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let records = db.GetCollection<RecordWithShape> "Shapes"                                     
                 let shape = 
                     Composite [ 
@@ -588,7 +589,7 @@ let liteDatabaseUsage =
                     | n -> fail()
 
         testCase "Full custom search works by using expressions" <| fun _ ->
-            useDatabase <| fun db ->
+            useDatabase mapper<| fun db ->
                 let records = db.GetCollection<RecordWithShape> "Shapes"                                     
                 let shape = 
                     Composite [ 

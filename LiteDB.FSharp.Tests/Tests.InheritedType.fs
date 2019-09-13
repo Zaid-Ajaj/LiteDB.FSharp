@@ -7,6 +7,7 @@ open LiteDB.FSharp
 open Tests.Types
 open LiteDB.FSharp.Linq
 open LiteDB.FSharp.Extensions
+open LiteDB.FSharp.Experimental
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
@@ -99,21 +100,21 @@ type Item2OfRecord =
         member this.Color = this.Color 
 
 
-let useDatabase (f: LiteRepository -> unit) = 
-    let mapper = FSharpBsonMapper()
+let useDatabase mapper (f: LiteRepository -> unit) = 
     use memoryStream = new MemoryStream()
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1>()
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2>()
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1OfRecord>()
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2OfRecord>()
     use db = new LiteRepository(memoryStream, mapper)
-    f db  
+    f db
     
-let inheritedTypeTests =
+    
+let inheritedTypeTests mapper=
   testList "InheritedTypeTests Tests" [
   
     testCase "EOrder with items that has different types" <| fun _ -> 
-      useDatabase <| fun db ->
+      useDatabase mapper <| fun db ->
         let item1 = 
             Item1 ( 
                 id = 0,
@@ -150,7 +151,7 @@ let inheritedTypeTests =
         | _ -> fail()     
 
     testCase "EOrder with record items that has different types" <| fun _ -> 
-      useDatabase <| fun db ->
+      useDatabase mapper <| fun db ->
         let item1 = 
                 {
                     Id = 0
