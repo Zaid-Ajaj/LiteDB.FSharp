@@ -13,6 +13,7 @@ open LiteDB
 open System.Collections.Generic
 open LiteDB
 open LiteDB
+open LiteDB.FSharp.Experimental
 
 type MaritalStatus = Single | Married
 
@@ -54,7 +55,7 @@ let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
 let useDatabase (f: LiteDatabase -> unit) = 
-    let mapper = FSharpBsonMapper()
+    let mapper = TypeShapeMapper()
     use memoryStream = new MemoryStream()
     use db = new LiteDatabase(memoryStream, mapper)
     f db

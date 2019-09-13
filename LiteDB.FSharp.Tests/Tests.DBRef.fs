@@ -5,6 +5,7 @@ open System
 open System.IO
 open LiteDB
 open LiteDB.FSharp
+open LiteDB.FSharp.Experimental
 open Tests.Types
 open LiteDB.FSharp.Linq
 open LiteDB.FSharp.Extensions
@@ -13,7 +14,7 @@ let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
 let useDatabase (f: LiteRepository -> unit) = 
-    let mapper = FSharpBsonMapper()
+    let mapper = TypeShapeMapper()
     mapper.DbRef<Order,_>(fun c -> c.Company)
     mapper.DbRef<Order,_>(fun c -> c.EOrders)
     use memoryStream = new MemoryStream()

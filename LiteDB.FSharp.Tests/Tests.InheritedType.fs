@@ -7,6 +7,7 @@ open LiteDB.FSharp
 open Tests.Types
 open LiteDB.FSharp.Linq
 open LiteDB.FSharp.Extensions
+open LiteDB.FSharp.Experimental
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
@@ -100,7 +101,7 @@ type Item2OfRecord =
 
 
 let useDatabase (f: LiteRepository -> unit) = 
-    let mapper = FSharpBsonMapper()
+    let mapper = new TypeShapeMapper()
     use memoryStream = new MemoryStream()
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item1>()
     FSharpBsonMapper.RegisterInheritedConverterType<IItem,Item2>()
