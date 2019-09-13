@@ -50,12 +50,13 @@ namespace LiteDB.FSharp
 
           let parser =
             fun (bson : BsonValue) ->
-               if (bson.IsDocument) then
-               let doc = bson.AsDocument
-               fun x ->
-                  let res = shape.Set x (fP.From doc.[toKey shape.Label])
-                  res
-               else fun x -> x
+              if (bson.IsDocument) then
+                let doc = bson.AsDocument
+                fun x ->
+                 let res = shape.Set x (fP.From doc.[toKey shape.Label])
+                 res
+              else
+                fun x -> x
 
           printer, parser
       }
@@ -78,8 +79,6 @@ namespace LiteDB.FSharp
            for p in parsers do
             res <- p bson res
            res
-
-
 
       mkParser printer parser
     if (typeof<'T>.Name = typeof<BsonDocument>.Name)
@@ -241,18 +240,18 @@ namespace LiteDB.FSharp
           let printer =
              fun x ->
               if (hasFields) then
-              let doc = new BsonDocument()
-              doc.["__case"] <- case.CaseInfo.Name |> BsonValue
-              doc.["Items"] <- pickler.To x
-              doc |> BsonValue
-               else (case.CaseInfo.Name |> BsonValue)
+                let doc = new BsonDocument()
+                doc.["__case"] <- case.CaseInfo.Name |> BsonValue
+                doc.["Items"] <- pickler.To x
+                doc |> BsonValue
+              else (case.CaseInfo.Name |> BsonValue)
           let parser =
              fun v ->
               if (hasFields) then
                  pickler.From v
               else
                init v
-               
+
           mkParser printer parser
 
         let caseInfo = shape.UnionCases |> Array.map mkUnionCaseInfo

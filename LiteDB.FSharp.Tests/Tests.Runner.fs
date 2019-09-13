@@ -9,12 +9,12 @@ open Tests.LiteDatabase
 open Tests.DBRef
 open Tests.InheritedType
 
-let testConfig =  
-    { Expecto.Tests.defaultConfig with 
+let testConfig =
+    { Expecto.Tests.defaultConfig with
          parallelWorkers = 1
          verbosity = LogLevel.Debug }
 
-let defaultValueTests = 
+let defaultValueTests =
     testList "DefaultValue.fromType" [
         testCase "Works for booleans" <| fun _ ->
             let value = DefaultValue.fromType (typeof<bool>) |> unbox<bool>
@@ -29,8 +29,8 @@ let defaultValueTests =
             Expect.equal "" value "An empty string is the default string"
     ]
 
-let liteDbTests mapper=
-    testList "All tests" [  
+let liteDbTests mapper name =
+    testList name [
         defaultValueTests
         bsonConversions
         liteDatabaseUsage mapper
@@ -41,14 +41,12 @@ let liteDbTests mapper=
 
 [<EntryPoint>]
 let main argv =
-    let tests=
-         [
-         FSharpBsonMapper()
-         TypeShapeMapper() :> FSharpBsonMapper
-         ]|>List.map liteDbTests
-    tests |> List.map(fun t ->runTests testConfig t)|>List.tryFind (fun r->r<>0)|>Option.defaultValue 0
-    
-     
-     
-     
-    
+    let bsonJsonMapper = FSharpBsonMapper()
+    let typeShapeMapper = TypeShapeMapper() :> FSharpBsonMapper
+    let tests =
+        testList "Parameterized tests" [
+            liteDbTests bsonJsonMapper "JSON Mapper Tests"
+            liteDbTests typeShapeMapper "TypeShape Mapper Tests"
+        ]
+
+    runTests testConfig tests
