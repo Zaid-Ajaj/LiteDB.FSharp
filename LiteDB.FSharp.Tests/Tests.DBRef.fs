@@ -13,27 +13,19 @@ open LiteDB.FSharp.Extensions
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
-let useTypeShapeDatabase (f: LiteRepository -> unit) = 
-    let mapper = TypeShapeMapper()
+    
+let useDataBase (mapper:FSharpBsonMapper) (f: LiteRepository -> unit) = 
     mapper.DbRef<Order,_>(fun c -> c.Company)
     mapper.DbRef<Order,_>(fun c -> c.EOrders)
     use memoryStream = new MemoryStream()
     use db = new LiteRepository(memoryStream, mapper)
     f db
     
-let useDatabase (f: LiteRepository -> unit) = 
-    let mapper = FSharpBsonMapper()
-    mapper.DbRef<Order,_>(fun c -> c.Company)
-    mapper.DbRef<Order,_>(fun c -> c.EOrders)
-    use memoryStream = new MemoryStream()
-    use db = new LiteRepository(memoryStream, mapper)
-    f db
-    
-let dbRefTests =
+let dbRefTests mapper=
   testList "DBRef Tests"  [
   
     testCase "CLIType DBRef Token Test" <| fun _ -> 
-      useDatabase <| fun db ->
+      useDataBase mapper<| fun db ->
         let company = { Id = 1; Name = "InitializedCompanyName"}  
         let order = { Id = 1; Company = company; EOrders = []}
         db 
@@ -51,7 +43,7 @@ let dbRefTests =
        
         
     testCase "CLIType DBRef token without include Test" <| fun _ -> 
-      useDatabase <| fun db ->
+      useDataBase mapper<| fun db ->
         let company = {Id = 1; Name = "InitializedCompanyName"}  
         let order = { Id = 1; Company = company; EOrders = []}
         db.Insert(company)
@@ -60,7 +52,7 @@ let dbRefTests =
         Expect.equal m.Company.Id 1 "CLIType DBRef NestedId token Test Corrently"   
     
     testCase "CLIType DBRef NestedId token Test" <| fun _ -> 
-      useDatabase <| fun db ->
+      useDataBase mapper<| fun db ->
         let company = {Id = 1; Name = "InitializedCompanyName"}  
         let order = { Id = 1; Company = company; EOrders = []}
         db.Insert(company)
@@ -70,7 +62,7 @@ let dbRefTests =
     
     
     testCase "CLIType DBRef with List token Test" <| fun _ -> 
-      useDatabase <| fun db->
+      useDataBase mapper<| fun db->
         let e1 = {Id = 1; OrderNumRange="test1"; Items = []}
         let e2 = {Id = 2; OrderNumRange="test2"; Items = []}
         let order =
@@ -86,7 +78,7 @@ let dbRefTests =
     
     
     testCase "CLIType DBRef with list NestedId token Test" <| fun _ -> 
-      useDatabase <| fun db->
+      useDataBase mapper<| fun db->
         let e1= {Id=1; OrderNumRange="test1"; Items = []}
         let e2= {Id=2; OrderNumRange="test2"; Items = []}
         let order=
