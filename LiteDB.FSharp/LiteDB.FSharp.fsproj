@@ -17,6 +17,7 @@
     <Compile Include="Json.fs" />
     <Compile Include="Bson.fs" />
     <Compile Include="FSharpBsonMapper.fs" />
+    <Compile Include="TypeShapeMapper.fs" />
     <Compile Include="Patterns.fs" />
     <Compile Include="Query.fs" />
     <Compile Include="Extensions.fs" />
