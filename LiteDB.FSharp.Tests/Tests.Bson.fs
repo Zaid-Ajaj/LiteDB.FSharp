@@ -103,6 +103,14 @@ let bsonConversions =
       | { id = 1; arr = [| 1;2;3;4;5 |] } -> pass()
       | otherwise -> fail()
 
+    testCase "record with resizeArray" <| fun _ ->
+      let record: RecordWithResizeArray = { id = 1; resizeArray = ResizeArray [ 1 .. 5 ] }
+      let doc = Bson.serialize record
+      let result = Bson.deserialize<RecordWithResizeArray> doc
+      match result.id, List.ofSeq result.resizeArray with
+      | 1, [ 1;2;3;4;5 ] -> pass()
+      | otherwise -> fail()
+
     testCase "record with map" <| fun _ -> 
       let map = 
         Map.empty<string, string>

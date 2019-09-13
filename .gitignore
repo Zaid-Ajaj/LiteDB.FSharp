@@ -14,6 +14,7 @@ dist
 .idea/.idea.LiteDB.FSharp/.idea
 .idea/.idea.LiteDB.FSharp/.idea/*.xml
 
-.vscode
 LiteDB.FSharp.userprefs
 LiteDB.FSharp.sln.DotSettings.user
+**/*.ionide/**
+.ionide

@@ -1,26 +1,25 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>Advanced F# Support for LiteDB with query construction through quotation expressions</Description>
-    <PackageProjectUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp.git</RepositoryUrl>
-    <PackageLicenseUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp/blob/master/LICENSE</PackageLicenseUrl>
-    <PackageIconUrl></PackageIconUrl>
-    <PackageTags>fsharp;litedb;embedded;database;document-database</PackageTags>
-    <Authors>Zaid Ajaj</Authors>
-    <Version>2.10.0</Version>
-    <TargetFrameworks>netstandard2.0;net45;net461</TargetFrameworks>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="Linq.fs" />
-    <Compile Include="Json.fs" />
-    <Compile Include="Bson.fs" />
-    <Compile Include="FSharpBsonMapper.fs" />
-    <Compile Include="TypeShapeMapper.fs" />
-    <Compile Include="Patterns.fs" />
-    <Compile Include="Query.fs" />
-    <Compile Include="Extensions.fs" />
-  </ItemGroup>
-  <Import Project="..\.paket\Paket.Restore.targets" />
+    <PropertyGroup>
+        <Description>Advanced F# Support for LiteDB with query construction through quotation expressions</Description>
+        <PackageProjectUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp.git</RepositoryUrl>
+        <PackageLicenseUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp/blob/master/LICENSE</PackageLicenseUrl>
+        <PackageIconUrl></PackageIconUrl>
+        <PackageTags>fsharp;litedb;embedded;database;document-database</PackageTags>
+        <Authors>Zaid Ajaj</Authors>
+        <Version>2.11.0</Version>
+        <TargetFrameworks>netstandard2.0;net45;net461</TargetFrameworks>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="Linq.fs" />
+        <Compile Include="Json.fs" />
+        <Compile Include="Bson.fs" />
+        <Compile Include="FSharpBsonMapper.fs" />
+        <Compile Include="Patterns.fs" />
+        <Compile Include="Query.fs" />
+        <Compile Include="Extensions.fs" />
+    </ItemGroup>
+    <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
