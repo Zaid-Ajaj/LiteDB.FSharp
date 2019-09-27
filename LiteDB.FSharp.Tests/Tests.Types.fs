@@ -18,7 +18,9 @@ type RecordWithFloat = { id: int; float: float }
 type RecordWithGuid = { id: int; guid: Guid }
 type RecordWithBytes = { id: int; data:byte[] }
 type RecordWithObjectId = { id: LiteDB.ObjectId }
-type RecordWithOption = { id:int; generic: Option<int>  }
+type RecordWithOptionOfValueType = { id:int; optionOfValueType: Option<int>  }
+type RecordWithOptionOfReferenceType = { id:int; optionOfReferenceType : Option<Person>  }
+
 type Shape = 
     | Circle of float
     | Rect of float * float
