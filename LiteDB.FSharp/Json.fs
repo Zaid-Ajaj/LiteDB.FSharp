@@ -299,6 +299,8 @@ type FSharpJsonConverter() =
                 if innerType.IsValueType
                 then (typedefof<Nullable<_>>).MakeGenericType([|innerType|])
                 else innerType
+
+            let cases = FSharpType.GetUnionCases(t)
             
             let value = 
                 match reader.TokenType with 
@@ -310,9 +312,9 @@ type FSharpJsonConverter() =
                         value.ToObject(innerType,serializer)
                     else
                         jObject.ToObject(innerType,serializer)
+                | JsonToken.Null -> null
                 | _ -> serializer.Deserialize(reader,innerType)              
 
-            let cases = FSharpType.GetUnionCases(t)
             if isNull value
             then FSharpValue.MakeUnion(cases.[0], [||])
             else FSharpValue.MakeUnion(cases.[1], [|value|])

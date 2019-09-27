@@ -225,20 +225,51 @@ let bsonConversions =
       Expect.equal created1.Second 45 "Second is deserialized correctly"
       Expect.equal created2.Second 45 "Second is deserialized correctly"
       
-    testCase "Bson (de)serialization for options works" <| fun _ ->
-      let record = { id = 1; generic = Some 1 }
+    testCase "Bson (de)serialization for options of value type works" <| fun _ ->
+      let record = { id = 1; optionOfValueType = Some 1 }
       let doc = Bson.serialize record
 
       doc 
-      |> Bson.read "generic"
+      |> Bson.read "optionOfValueType"
       |> Bson.deserializeField<Option<int>>
       |> function
           | Some 1 -> pass()
           | other -> fail()
         
-      match Bson.deserialize<RecordWithOption> doc with
-      | { id = 1; generic = Some 1 } -> pass()
+      match Bson.deserialize<RecordWithOptionOfValueType> doc with
+      | { id = 1; optionOfValueType = Some 1 } -> pass()
       | otherwise -> fail()
+
+    testCase "Bson (de)serialization for options of reference type works when value is None" <| fun _ ->
+      let record = { id = 1; optionOfReferenceType = None }
+      let doc = Bson.serialize record
+
+      doc 
+      |> Bson.read "optionOfReferenceType"
+      |> Bson.deserializeField<Option<Person>>
+      |> function
+          | None -> pass()
+          | other -> fail()
+        
+      match Bson.deserialize<RecordWithOptionOfReferenceType> doc with
+      | { id = 1; optionOfReferenceType = None } -> pass()
+      | otherwise -> fail()
+
+    testCase "Bson (de)serialization for options of reference type works when value is Some" <| fun _ ->
+      let record = { id = 1; optionOfReferenceType = Some {Id = 0; Name = "Name"} }
+      let doc = Bson.serialize record
+
+      doc 
+      |> Bson.read "optionOfReferenceType"
+      |> Bson.deserializeField<Option<Person>>
+      |> function
+          | Some {Id = 0; Name = "Name"} -> pass()
+          | other -> fail()
+        
+      match Bson.deserialize<RecordWithOptionOfReferenceType> doc with
+      | { id = 1; optionOfReferenceType = Some {Id = 0; Name = "Name"} } -> pass()
+      | otherwise -> fail()
+
 
     testCase "Binary data is serialized correctly" <| fun _ ->
       let bytes = Array.map byte [| 1 .. 10 |]
