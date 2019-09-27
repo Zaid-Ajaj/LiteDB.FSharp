@@ -225,7 +225,22 @@ let bsonConversions =
       Expect.equal created1.Second 45 "Second is deserialized correctly"
       Expect.equal created2.Second 45 "Second is deserialized correctly"
       
-    testCase "Bson (de)serialization for options of value type works" <| fun _ ->
+    testCase "Bson (de)serialization for options of value type works when value is None" <| fun _ ->
+      let record = { id = 1; optionOfValueType = None }
+      let doc = Bson.serialize record
+
+      doc 
+      |> Bson.read "optionOfValueType"
+      |> Bson.deserializeField<Option<int>>
+      |> function
+          | None -> pass()
+          | other -> fail()
+        
+      match Bson.deserialize<RecordWithOptionOfValueType> doc with
+      | { id = 1; optionOfValueType = None } -> pass()
+      | otherwise -> fail()
+
+    testCase "Bson (de)serialization for options of value type works when value is Some" <| fun _ ->
       let record = { id = 1; optionOfValueType = Some 1 }
       let doc = Bson.serialize record
 
