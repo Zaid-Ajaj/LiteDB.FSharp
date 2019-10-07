@@ -74,6 +74,16 @@ let liteDatabaseUsage mapper=
                     | [ { Id = 1; MutableBoolean = false } ] -> pass()
                     | otherwise -> fail()
 
+        testCase "findOne works when Id is a single case union" <| fun _ ->
+            useJsonMapperDatabase <| fun db ->
+                let records = db.GetCollection<RecordWithSingleCaseId>("documents")
+                let record = { Id = SingleCaseDU 20; Value = "John" }
+                records.Insert(record) |> ignore
+                records.findOne (fun document -> document.Id = SingleCaseDU 20)
+                |> function
+                    | { Id = SingleCaseDU 20; Value = "John" } -> pass()
+                    | otherwise -> fail()
+
         testCase "Uninitialized values are populated with default values" <| fun _ ->
             useDatabase mapper<| fun db ->
                 let records = db.GetCollection<BsonDocument>("documents")

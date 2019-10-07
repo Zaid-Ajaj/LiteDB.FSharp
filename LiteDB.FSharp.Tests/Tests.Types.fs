@@ -21,7 +21,7 @@ type RecordWithObjectId = { id: LiteDB.ObjectId }
 type RecordWithOptionOfValueType = { id:int; optionOfValueType: Option<int>  }
 type RecordWithOptionOfReferenceType = { id:int; optionOfReferenceType : Option<Person>  }
 
-type Shape = 
+type Shape =
     | Circle of float
     | Rect of float * float
     | Composite of Shape list
@@ -32,51 +32,53 @@ type RecordWithMapDU = { Id: int; Properties: Map<string, Value> }
 
 type RecordWithShape = { Id: int; Shape: Shape }
 
-type ComplexUnion<'t> = 
+type ComplexUnion<'t> =
     | Any of 't
     | Int of int
-    | String of string 
+    | String of string
     | Generic of Maybe<'t>
 
 
+type SingleCaseDU = SingleCaseDU of int
 
+type RecordWithSingleCaseId = { Id : SingleCaseDU; Value : string }
 
 type IColor =
-    abstract member Color : string 
+    abstract member Color : string
 
 type IBarcode =
-    abstract member Barcode : string 
+    abstract member Barcode : string
 
 type ISize =
     abstract member Size : int
 
-type IItem = 
+type IItem =
     abstract member Id : int
     abstract member Art : string
     abstract member Name : string
     abstract member Number : int
 
 
-type RecWithMember = { 
-    Id: int 
-    Name: string    
+type RecWithMember = {
+    Id: int
+    Name: string
 }
-with member this.Ignored() = sprintf "%d %s" this.Id this.Name 
+with member this.Ignored() = sprintf "%d %s" this.Id this.Name
      member this.IgnoredToo = sprintf "%d %s" this.Id this.Name
 
 
 [<CLIMutable>]
 type Company=
   { Id: int
-    Name: string}   
+    Name: string}
 
-[<CLIMutable>]    
+[<CLIMutable>]
 type EOrder=
   { Id: int
     Items : IItem list
-    OrderNumRange: string }   
+    OrderNumRange: string }
 
-[<CLIMutable>]    
+[<CLIMutable>]
 type Order=
   { Id : int
     Company : Company
