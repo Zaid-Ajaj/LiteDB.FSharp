@@ -11,6 +11,7 @@ type RecordWithGenericUnion<'t> = { Id: int; GenericUnion: Maybe<'t> }
 type RecordWithDateTime = { id: int; created: DateTime }
 type RecordWithMap = { id : int; map: Map<string, string> }
 type RecordWithArray = { id: int; arr: int[] }
+type RecordWithOptionalArray = { id: int; arr: int[] option }
 type RecordWithResizeArray = { id: int; resizeArray: ResizeArray<int> }
 type RecordWithDecimal = { id: int; number: decimal }
 type RecordWithLong = { id: int; long: int64 }
