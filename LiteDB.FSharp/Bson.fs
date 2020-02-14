@@ -73,7 +73,7 @@ module Bson =
     /// Converts a BsonDocument to a typed entity given the document the type of the CLR entity.
     let deserializeByType (entity: BsonDocument) (entityType: Type) =
         let getCollectionElementType (collectionType:Type)=
-            let typeNames = ["FSharpList`1";"IEnumerable`1";"List`"; "List`1"; "IList`1"]
+            let typeNames = ["FSharpList`1";"IEnumerable`1";"List`"; "List`1"; "IList`1"; "FSharpOption`1"]
             let typeName = collectionType.Name
             if List.contains typeName typeNames then
                 collectionType.GetGenericArguments().[0]

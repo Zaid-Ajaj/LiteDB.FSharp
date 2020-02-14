@@ -97,10 +97,23 @@ let bsonConversions =
       | otherwise -> fail()
 
     testCase "record with array" <| fun _ ->
-      let record = { id = 1; arr = [| 1 .. 5 |] }
+      let record: RecordWithArray = { id = 1; arr = [| 1 .. 5 |] }
       let doc = Bson.serialize record
       match Bson.deserialize<RecordWithArray> doc with
       | { id = 1; arr = [| 1;2;3;4;5 |] } -> pass()
+      | otherwise -> fail()
+      
+    testCase "record with optional array" <| fun _ ->
+      let recordNone = { id = 1; arr = None }
+      let docNone = Bson.serialize recordNone
+      match Bson.deserialize<RecordWithOptionalArray> docNone with
+      | { id = 1; arr = None } -> pass()
+      | otherwise -> fail()
+      
+      let recordSome = { id = 1; arr = Some([| 1 .. 5 |]) }
+      let docSome = Bson.serialize recordSome
+      match Bson.deserialize<RecordWithOptionalArray> docSome with
+      | { id = 1; arr = Some([| 1;2;3;4;5 |]) } -> pass()
       | otherwise -> fail()
 
     testCase "record with resizeArray" <| fun _ ->
