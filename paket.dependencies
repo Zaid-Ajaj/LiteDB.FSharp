@@ -6,8 +6,3 @@ nuget FSharp.Core
 nuget LiteDB
 nuget Newtonsoft.JSON
 nuget TypeShape
-
-group Build
-    framework >= net45
-    source https://www.nuget.org/api/v2
-    nuget FAKE
