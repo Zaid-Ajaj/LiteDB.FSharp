@@ -604,9 +604,3 @@ NUGET
       FSharp.Core (>= 3.1.2) - restriction: >= net40
       FSharp.Core (>= 4.3.4) - restriction: && (< net40) (>= netstandard2.0)
       System.Reflection.Emit.Lightweight (>= 4.3) - restriction: && (< net40) (>= netstandard2.0)
-
-GROUP Build
-RESTRICTION: >= net45
-NUGET
-  remote: https://www.nuget.org/api/v2
-    FAKE (5.16)

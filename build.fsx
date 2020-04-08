@@ -1,9 +1,16 @@
-#r "packages/build/FAKE/tools/FakeLib.dll"
+#r "paket:
+nuget Fake.Core.Target
+nuget Fake.IO.FileSystem
+//"
 
-open Fake
-open System
+#load ".fake/build.fsx/intellisense.fsx"
+
 open System.IO
 
+open Fake.Core
+open Fake.Core.TargetOperators
+open Fake.IO
+open Fake.IO.FileSystemOperators
 
 let cwd = __SOURCE_DIRECTORY__
 let dotnet = "dotnet"
@@ -13,37 +20,44 @@ let testsPath = cwd </> "LiteDB.FSharp.Tests"
 let run workingDir fileName args =
     printfn "CWD: %s" workingDir
     let fileName, args =
-        if EnvironmentHelper.isUnix
+        if Environment.isUnix
         then fileName, args
         else "cmd", ("/C " + fileName + " " + args)
-    let ok =
-        execProcess (fun info ->
-            info.FileName <- fileName
-            info.WorkingDirectory <- workingDir
-            info.Arguments <- args) TimeSpan.MaxValue
-    if not ok then
+    let exitCode =
+        { 
+            Program = fileName
+            WorkingDir = workingDir
+            CommandLine = args
+            Args = []
+        }
+        |> Fake.Core.Process.shellExec
+
+    if exitCode <> 0 then
         failwithf "'%s> %s %s' task failed" workingDir fileName args
 
-Target "RunTests" <| fun () ->
+Target.create "RunTests" <| fun _ ->
     "run LiteDB.FSharp.Tests.fsproj"
     |> run testsPath dotnet
 
-Target "Clean" <| fun () -> 
-    CleanDir (projectPath </> "bin")
-    CleanDir (projectPath </> "obj")
-    CleanDir (testsPath </> "bin")
-    CleanDir (testsPath </> "obj")
+Target.create "Clean" <| fun _ -> 
+    [
+        projectPath </> "bin"
+        projectPath </> "obj"
+        testsPath </> "bin"
+        testsPath </> "obj"
+    ]
+    |> Shell.cleanDirs
 
-Target "Build" <| fun () ->
+Target.create "Build" <| fun _ ->
     "build -c Release LiteDB.FSharp.fsproj"
     |> run projectPath dotnet 
 
-Target "PublishNuget" <| fun () ->
+Target.create "PublishNuget" <| fun _ ->
     let projectPath = cwd </> "LiteDB.FSharp"
     "pack -c Release"
     |> run projectPath dotnet 
     let nugetKey =
-        match environVarOrNone "NUGET_KEY" with
+        match Environment.environVarOrNone "NUGET_KEY" with
         | Some nugetKey -> nugetKey
         | None -> failwith "The Nuget API key must be set in a NUGET_KEY environmental variable"
     let nupkg = Directory.GetFiles(projectPath </> "bin" </> "Release") |> Seq.head
@@ -51,11 +65,10 @@ Target "PublishNuget" <| fun () ->
     run projectPath dotnet pushCmd
 
 "Clean"
-   ==> "Build" 
-   ==> "PublishNuget" 
-
+   ==> "Build"
+   ==> "PublishNuget"
 
 "Clean"
    ==> "RunTests"
 
-RunTargetOrDefault "RunTests"
+Target.runOrDefault "RunTests"
