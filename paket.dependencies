@@ -3,6 +3,6 @@ source https://www.nuget.org/api/v2
 storage:none
 nuget Expecto
 nuget FSharp.Core
-nuget LiteDB
+nuget LiteDB ~> 4.1
 nuget Newtonsoft.JSON
 nuget TypeShape
