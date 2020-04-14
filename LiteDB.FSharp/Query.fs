@@ -6,6 +6,7 @@ open Microsoft.FSharp.Quotations.Patterns
 open LiteDB
 open Microsoft.FSharp.Reflection
 
+// TODO: Does not compile. The query API has apparently changed completely.
 module Query =
     let internal mapper = FSharpBsonMapper()
     let rec createQueryFromExpr<'t> (expr: Expr) : Query =

@@ -88,16 +88,17 @@ namespace LiteDB.FSharp
       | Shape.Unit -> mkParser (fun _ -> BsonValue.Null) (fun _ -> ())
       | Shape.Bool -> mkParser (fun x -> unbox<bool> x |> BsonValue) (fun v ->
                                        if (v.IsNull) then false
-                                       else
-                                       unbox<bool> v.RawValue)
+                                       else v.AsBoolean)
+      // TODO: Does not compile. The BsonValue constructor taking an obj is gone, and there is none
+      // for byte. Also BsonValue.RawValue is gone, and there is no .AsByte property.
       | Shape.Byte -> mkParser (fun (x : byte) -> x |> BsonValue) (fun v -> unbox<byte> v.RawValue)
-      | Shape.Int32 -> mkParser (fun (x : int) -> x |> BsonValue) (fun v -> unbox<int> v.RawValue)
-      | Shape.Int64 -> mkParser (fun x -> unbox<int64> x |> BsonValue) (fun v -> unbox<int64> v.RawValue)
-      | Shape.String -> mkParser (fun x -> unbox<string> x |> BsonValue) (fun v -> unbox<string> v.RawValue)
-      | Shape.Guid -> mkParser (fun x -> unbox<Guid> x |> BsonValue) (fun v -> unbox<Guid> v.RawValue)
-      | Shape.Decimal -> mkParser (fun x -> unbox<Decimal> x |> BsonValue) (fun v -> unbox<Decimal> v.RawValue)
-      | Shape.Double -> mkParser (fun x -> unbox<Double> x |> BsonValue) (fun v -> unbox<Double> v.RawValue)
-      | Shape.DateTime -> mkParser (fun x -> unbox<DateTime> x |> BsonValue) (fun v -> unbox<DateTime> v.RawValue)
+      | Shape.Int32 -> mkParser (fun (x : int) -> x |> BsonValue) (fun v -> v.AsInt32)
+      | Shape.Int64 -> mkParser (fun x -> unbox<int64> x |> BsonValue) (fun v -> v.AsInt64)
+      | Shape.String -> mkParser (fun x -> unbox<string> x |> BsonValue) (fun v -> v.AsString)
+      | Shape.Guid -> mkParser (fun x -> unbox<Guid> x |> BsonValue) (fun v -> v.AsGuid)
+      | Shape.Decimal -> mkParser (fun x -> unbox<Decimal> x |> BsonValue) (fun v -> v.AsDecimal)
+      | Shape.Double -> mkParser (fun x -> unbox<Double> x |> BsonValue) (fun v -> v.AsDouble)
+      | Shape.DateTime -> mkParser (fun x -> unbox<DateTime> x |> BsonValue) (fun v -> v.AsDateTime)
       | Shape.FSharpOption s ->
              s.Element.Accept {
                new ITypeVisitor<Convert<'T>>
@@ -147,9 +148,13 @@ namespace LiteDB.FSharp
               let printer =
                 fun x ->
                 let ts = unbox<'t> x |> LanguagePrimitives.EnumToValue
+                // TODO: Does not compile. The BsonValue constructor taking an obj is gone.
+                // Potentially replaceable with BsonDocument?
                 ts |> BsonValue
 
               let parser = fun (v : BsonValue) ->
+                 // TODO: Does not compile. BsonValue.RawValue is gone. Potentially replaceable with
+                 // BsonDocument via .AsDocument?
                  let res : 't = LanguagePrimitives.EnumOfValue(unbox<'u> v.RawValue)
                  res
 
@@ -243,6 +248,8 @@ namespace LiteDB.FSharp
                 let doc = new BsonDocument()
                 doc.["__case"] <- case.CaseInfo.Name |> BsonValue
                 doc.["Items"] <- pickler.To x
+                // TODO: Does not compile. The BsonValue constructor taking a BsonValue is gone.
+                // However, BsonDocument implements BsonValue directly. Unclear if that is an option.
                 doc |> BsonValue
               else (case.CaseInfo.Name |> BsonValue)
           let parser =

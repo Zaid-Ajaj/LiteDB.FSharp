@@ -13,23 +13,23 @@ open LiteDB
 [<RequireQualifiedAccess>]
 module Bson = 
     /// Returns the value of entry in the BsonDocument by it's key
-    let read key (doc: BsonDocument) =
+    let read (key: string) (doc: BsonDocument) =
         doc.[key]
 
     /// Reads a property from a BsonDocument by it's key as a string
-    let readStr key (doc: BsonDocument) = 
+    let readStr (key: string) (doc: BsonDocument) = 
         doc.[key].AsString
 
     /// Reads a property from a BsonDocument by it's key and converts it to an integer
-    let readInt key (doc: BsonDocument) = 
+    let readInt (key: string) (doc: BsonDocument) = 
         doc.[key].AsString |> int
 
     /// Reads a property from a BsonDocument by it's key and converts it to an integer
-    let readBool key (doc: BsonDocument) = 
+    let readBool (key: string) (doc: BsonDocument) = 
         doc.[key].AsString |> bool.Parse
 
     /// Adds an entry to a `BsonDocument` given a key and a BsonValue
-    let withKeyValue key value (doc: BsonDocument) = 
+    let withKeyValue (key: string) value (doc: BsonDocument) = 
         doc.Add(key, value)
         doc
 
@@ -96,7 +96,7 @@ module Bson =
                 | []  -> ()
                 | y :: ys -> 
                     let continueToNext() = rewriteKey ys entity entityType key 
-                    match y, entity.RawValue.[y] with 
+                    match y, entity.[y] with 
                     // during deserialization, turn key-prop _id back into original Id or id
                     | "_id", id ->
                         entity
@@ -115,7 +115,7 @@ module Bson =
                         // also re-write the transformed _id key property back to original Id or id
                         let propType = entityType.GetProperty(y).PropertyType
                         if FSharpType.IsRecord propType    
-                        then rewriteKey (List.ofSeq bson.RawValue.Keys) bson propType (getKeyFieldName propType)
+                        then rewriteKey (List.ofSeq bson.Keys) bson propType (getKeyFieldName propType)
                         continueToNext()
 
                     |_, (:? BsonArray as bsonArray) ->
@@ -129,14 +129,14 @@ module Bson =
                                 if bson.IsDocument 
                                 then
                                   let doc = bson.AsDocument
-                                  let keys = List.ofSeq doc.RawValue.Keys
+                                  let keys = List.ofSeq doc.Keys
                                   rewriteKey keys doc elementType docKey
                         
                         continueToNext()
                     |_ -> 
                         continueToNext()
             
-            let keys = List.ofSeq entity.RawValue.Keys
+            let keys = List.ofSeq entity.Keys
             rewriteKey keys entity entityType (getKeyFieldName entityType)
             entity
 

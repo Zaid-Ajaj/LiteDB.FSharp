@@ -50,6 +50,7 @@ module Extensions =
                     | ("Id" | "id" | "ID") -> "_id"
                     | _ -> propInfo.Name
                 let query =
+                    // TODO: Does not compile. The static Where() method is gone.
                     Query.Where(propName, fun bsonValue ->
                         bsonValue
                         |> Bson.deserializeField<'u>
@@ -68,6 +69,7 @@ module Extensions =
                         | ("Id" | "id" | "ID") -> "_id"
                         | _ -> propInfo.Name
 
+                    // TODO: Does not compile. The static Where() method is gone.
                     Query.Where(propName, fun bsonValue ->
                         bsonValue
                         |> Bson.deserializeField<'u>
@@ -79,6 +81,7 @@ module Extensions =
         /// Remove all document based on quoted expression query. Returns removed document counts
         member collection.delete<'t> ([<ReflectedDefinition>] expr: Expr<'t -> bool>) =
             let query = Query.createQueryFromExpr expr
+            // TODO: Does not compile. The Delete() overload taking a Query is gone.
             collection.Delete(query)
 
     type LiteRepository with
@@ -111,28 +114,28 @@ module Extensions =
     [<RequireQualifiedAccess>]
     type LiteQueryable =
         ///Include DBRef field in result query execution
-        static member ``include`` (exp: Expression<Func<'a,'b>>) (query: LiteQueryable<'a>) =
+        static member ``include`` (exp: Expression<Func<'a,'b>>) (query: ILiteQueryable<'a>) =
             query.Include(exp)
 
        ///Include DBRef field in result query execution
-        static member expand (exp: Expression<Func<'a,'b>>) (query: LiteQueryable<'a>) =
+        static member expand (exp: Expression<Func<'a,'b>>) (query: ILiteQueryable<'a>) =
             query.Include(exp)
 
-        static member first (query: LiteQueryable<'a>) =
+        static member first (query: ILiteQueryable<'a>) =
             query.First()
 
-        static member toList (query: LiteQueryable<'a>) =
+        static member toList (query: ILiteQueryable<'a>) =
             query.ToEnumerable() |> List.ofSeq
 
         ///Add new Query filter when query will be executed. This filter use database index
-        static member where (exp: Expression<Func<'a,bool>>) (query: LiteQueryable<'a>) =
+        static member where (exp: Expression<Func<'a,bool>>) (query: ILiteQueryable<'a>) =
             query.Where exp
 
-        static member find (exp: Expression<Func<'a,bool>>) (query: LiteQueryable<'a>) =
+        static member find (exp: Expression<Func<'a,bool>>) (query: ILiteQueryable<'a>) =
             query |> LiteQueryable.where exp |> LiteQueryable.first
 
-        static member tryFirst (query: LiteQueryable<'a>) =
+        static member tryFirst (query: ILiteQueryable<'a>) =
             query.ToEnumerable() |> Seq.tryHead
 
-        static member tryFind (exp: Expression<Func<'a,bool>>) (query: LiteQueryable<'a>) =
+        static member tryFind (exp: Expression<Func<'a,bool>>) (query: ILiteQueryable<'a>) =
             query |> LiteQueryable.where exp |> LiteQueryable.tryFirst
