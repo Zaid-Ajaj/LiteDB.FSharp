@@ -1,6 +1,7 @@
 #r "paket:
 nuget Fake.Core.Target
 nuget Fake.DotNet.Cli
+nuget Fake.DotNet.Paket
 nuget Fake.IO.FileSystem
 //"
 
@@ -25,6 +26,7 @@ Target.create "RunTests" <| fun _ ->
 
 Target.create "Clean" <| fun _ -> 
     [
+        cwd </> "bin"
         projectPath </> "bin"
         projectPath </> "obj"
         testsPath </> "bin"
@@ -42,20 +44,21 @@ Target.create "Build" <| fun _ ->
     DotNet.build setParams (projectPath </> "LiteDB.FSharp.fsproj")
 
 Target.create "PackNuget" <| fun _ ->
-    let setParams (defaults: DotNet.PackOptions) =
+    Paket.pack (fun defaults ->
         {
             defaults with
-                Configuration = DotNet.BuildConfiguration.Release
-        }
-
-    DotNet.pack setParams projectPath
+                TemplateFile = projectPath </> "paket.template"
+                BuildConfig = "Release"
+                MinimumFromLockFile = true
+                OutputPath = cwd </> "bin"
+        })
 
 Target.create "PublishNuget" <| fun _ ->
     let nugetKey =
         match Environment.environVarOrNone "NUGET_KEY" with
         | Some nugetKey -> nugetKey
         | None -> failwith "The Nuget API key must be set in a NUGET_KEY environmental variable"
-    let nupkg = Directory.GetFiles(projectPath </> "bin" </> "Release") |> Seq.head
+    let nupkg = Directory.GetFiles(cwd </> "bin") |> Seq.head
 
     let setParams (defaults: DotNet.NuGetPushOptions) =
         {
