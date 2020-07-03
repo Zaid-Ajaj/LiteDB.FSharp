@@ -10,31 +10,37 @@ open System
 module Extensions =
     open Microsoft.FSharp.Quotations
 
-    type LiteCollection<'t> with
+    let nullToOption result =
+        match box result with
+        | null -> None
+        | _ -> Some result
+
+    type ILiteCollection<'t> with
         /// Tries to find a document using the Id of the document.
         member collection.TryFindById(id: BsonValue) =
-            let result : 't = collection.FindById(id)
-            match box result with
-            | null -> None
-            | _ -> Some result
+            collection.FindById(id)
+            |> nullToOption
 
         /// Tries to find a document using the given query
-        member collection.TryFind (query: Query) =
+        member collection.TryFind (query: BsonExpression) =
             let skipped = 0
             let limit = 1
             collection.Find(query, skipped, limit)
             |> Seq.tryHead
 
         /// Tries to find a single document using a quoted query expression
-        member collection.tryFindOne<'t> ([<ReflectedDefinition>] expr: Expr<'t -> bool>) : Option<'t> =
+        member collection.tryFindOne<'t> ([<ReflectedDefinition>] expr: Expr<'t -> bool>) : 't option =
             let query = Query.createQueryFromExpr expr
-            collection.TryFind query
+            collection.FindOne query
+            |> nullToOption
 
         /// Tries to find a single document using a quoted query expression, if no document matches, an exception is thrown
         member collection.findOne<'t> ([<ReflectedDefinition>] expr: Expr<'t -> bool>) : 't =
-            match collection.TryFind(Query.createQueryFromExpr expr) with
-            | Some item -> item
-            | None -> failwith "Could not find a single document that matches the given qeury"
+            collection.FindOne(Query.createQueryFromExpr expr)
+            |> nullToOption
+            |> function
+               | Some item -> item
+               | None -> failwith "Could not find a single document that matches the given qeury"
 
         /// Searches the collection for documents that match the given query expression
         member collection.findMany<'t> ([<ReflectedDefinition>] expr: Expr<'t -> bool>) : seq<'t> =
