@@ -10,6 +10,7 @@ LiteDB.FSharp comes with a custom `BsonMapper` called `FSharpBsonMapper` that yo
 ```fsharp
 open LiteDB
 open LiteDB.FSharp
+open LiteDB.FSharp.Extensions
 
 let mapper = FSharpBsonMapper()
 use db = new LiteDatabase("simple.db", mapper)
