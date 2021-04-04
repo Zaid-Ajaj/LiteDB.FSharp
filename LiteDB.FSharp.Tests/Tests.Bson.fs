@@ -186,6 +186,17 @@ let bsonConversions =
       | { Id = 2; Union = Two } -> pass()
       | otherwise -> fail() 
 
+    testCase "records with single private case union" <| fun _ ->
+      let recordRecord = { Id = 1; PhoneNumber = PhoneNumber.Create 16511825922L }
+
+      let doc = Bson.serialize recordRecord
+      match Bson.deserialize<RecordWithSinglePrivateUnion> doc with
+      | { Id = 1; PhoneNumber = phoneNumber } -> 
+        match phoneNumber.Value with 
+        | 16511825922L -> pass()
+        | _ -> fail()
+      | _ -> fail()
+
     testCase "records with lists" <| fun _ ->
       let fstRecord = { Id = 1; List = [1 .. 10] }
       let doc = Bson.serialize fstRecord

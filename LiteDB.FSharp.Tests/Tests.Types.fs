@@ -1,10 +1,26 @@
 module Tests.Types
 
 open System
+open LiteDB.FSharp
+
 type Person = { Id: int; Name: string }
 type LowerCaseId = { id: int; age:int }
 type SimpleUnion = One | Two
+
+type PhoneNumber = private PhoneNumber of int64
+with 
+    member x.Value =
+        let (PhoneNumber v) = x
+        v
+
+    static member Create(phoneNumber: int64) = 
+        match phoneNumber.ToString().Length with 
+        | 11 -> PhoneNumber phoneNumber
+        | _ -> failwithf "phone number %d 's length should be 11" phoneNumber
+
+
 type RecordWithSimpleUnion = { Id: int; Union: SimpleUnion }
+type RecordWithSinglePrivateUnion = { Id: int; PhoneNumber: PhoneNumber }
 type RecordWithList = { Id: int; List: int list }
 type Maybe<'a> = Just of 'a | Nothing
 type RecordWithGenericUnion<'t> = { Id: int; GenericUnion: Maybe<'t> }
