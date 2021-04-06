@@ -148,12 +148,14 @@ type FSharpJsonConverter() =
 
     let (|SinglePrivateCase|_|) t = 
         singlePrivateCaseUnionTypes.GetOrAdd(t, (fun _ ->
-            match FSharpType.GetUnionCases(t, true) with
-            | [| v |] -> 
-                let ctors = v.DeclaringType.GetConstructors()
-                match ctors.Length with 
-                | 0 -> Some (v)
-                    
+            match FSharpType.IsUnion t with 
+            | true ->
+                match FSharpType.GetUnionCases(t, true) with
+                | [| uci |] -> 
+                    let ctors = uci.DeclaringType.GetConstructors()
+                    match ctors.Length with 
+                    | 0 -> Some uci
+                    | _ -> None
                 | _ -> None
             | _ -> None
         ))
