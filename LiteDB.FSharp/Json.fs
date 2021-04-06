@@ -148,7 +148,7 @@ type FSharpJsonConverter() =
 
     let (|SinglePrivateCase|_|) t = 
         singlePrivateCaseUnionTypes.GetOrAdd(t, (fun _ ->
-            match FSharpType.IsUnion t with 
+            match FSharpType.IsUnion (t, true) with 
             | true ->
                 match FSharpType.GetUnionCases(t, true) with
                 | [| uci |] -> 
