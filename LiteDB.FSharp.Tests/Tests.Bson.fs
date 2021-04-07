@@ -187,9 +187,9 @@ let bsonConversions =
       | otherwise -> fail() 
 
     testCase "records with single private case union" <| fun _ ->
-      let recordRecord = { Id = 1; PhoneNumber = PhoneNumber.Create 16511825922L }
+      let record = { Id = 1; PhoneNumber = PhoneNumber.Create 16511825922L }
 
-      let doc = Bson.serialize recordRecord
+      let doc = Bson.serialize record
       match Bson.deserialize<RecordWithSinglePrivateUnion> doc with
       | { Id = 1; PhoneNumber = phoneNumber } -> 
         match phoneNumber.Value with 
@@ -198,9 +198,9 @@ let bsonConversions =
       | _ -> fail()
 
     testCase "multiple private case unions in records is not convertable" <| fun _ ->
-      let recordRecord = { Id = 1; Size = Size.CreateEUR 40. }
+      let record = { Id = 1; Size = Size.CreateEUR 40. }
 
-      let doc = Bson.serialize recordRecord
+      let doc = Bson.serialize record
       try 
         Bson.deserialize<RecordWithMultiplePrivateUnions> doc |> ignore
         fail()
