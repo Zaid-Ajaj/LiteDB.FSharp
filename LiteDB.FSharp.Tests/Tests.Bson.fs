@@ -57,6 +57,13 @@ let bsonConversions =
       | {id = 1; float = 8.5039370078740166} -> pass()
       | otherwise -> fail()  
 
+    testCase "records with enum" <| fun _ ->
+      let record = { id = 1; color = ConsoleColor.Gray }
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithEnum> doc with
+      | { id = 1; color = ConsoleColor.Gray } -> pass()
+      | otherwise -> fail()
+
     testCase "records with decimals" <| fun _ ->
       let record = { id = 1; number = 20.0M }
       let doc = Bson.serialize record

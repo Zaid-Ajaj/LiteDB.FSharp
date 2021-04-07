@@ -84,6 +84,7 @@ let liteDatabaseUsage mapper=
                     | { Id = SingleCaseDU 20; Value = "John" } -> pass()
                     | otherwise -> fail()
 
+
         testCase "Uninitialized values are populated with default values" <| fun _ ->
             useDatabase mapper<| fun db ->
                 let records = db.GetCollection<BsonDocument>("documents")
@@ -144,6 +145,16 @@ let liteDatabaseUsage mapper=
                 let inserted = docs.findOne(fun doc -> true)
                 Expect.equal 1 inserted.Keys.Count "Doc has one key (_id)"
                 Expect.equal 42 (Bson.readInt "_id" inserted) "_id = 42"
+
+        testCase "Query expression with enum value is supported" <| fun _ ->
+            useDatabase mapper<| fun db ->
+                let docs = db.GetCollection<RecordWithEnum>()
+                docs.Insert { id = 1; color = ConsoleColor.Gray } |> ignore
+
+                match docs.tryFindOne(fun doc -> doc.color = ConsoleColor.Gray ) with 
+                | Some { id = 1; color = ConsoleColor.Gray } -> pass()
+                | _ -> fail()
+
 
         testCase "Documents with optional DateTime = Some can be used" <| fun _ ->
             useDatabase mapper<| fun db ->
