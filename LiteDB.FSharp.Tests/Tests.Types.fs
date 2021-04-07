@@ -19,8 +19,21 @@ with
         | _ -> failwithf "phone number %d 's length should be 11" phoneNumber
 
 
+type Size =
+    private 
+        | US of float
+        | EUR of float
+        | UK of float
+with 
+    static member CreateEUR(eur: float) = 
+        if eur >=  19. && eur <= 46. && eur % 0.5 = 0.
+        then Size.EUR eur
+        else failwithf "%f is not a valid eur value" eur
+
+
 type RecordWithSimpleUnion = { Id: int; Union: SimpleUnion }
 type RecordWithSinglePrivateUnion = { Id: int; PhoneNumber: PhoneNumber }
+type RecordWithMultiplePrivateUnions = { Id: int; Size: Size }
 type RecordWithList = { Id: int; List: int list }
 type Maybe<'a> = Just of 'a | Nothing
 type RecordWithGenericUnion<'t> = { Id: int; GenericUnion: Maybe<'t> }

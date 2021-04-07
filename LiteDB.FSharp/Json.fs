@@ -79,14 +79,48 @@ type MapSerializer<'k,'v when 'k : comparison>() =
                 serializer.Serialize(writer, v) )
         writer.WriteEndObject()
 
-module private Cache =
+[<RequireQualifiedAccess>]
+type private ConvertableUnionType =
+    | SinglePrivate of UnionCaseInfo
+    | Public
 
+
+module private Cache =
+    
     let jsonConverterTypes = ConcurrentDictionary<Type,Kind>()
     let serializationBinderTypes = ConcurrentDictionary<string,Type>()
     let inheritedConverterTypes = ConcurrentDictionary<string,HashSet<Type>>()
     let inheritedTypeQuickAccessor = ConcurrentDictionary<string * list<string>,Type>()
-    let singlePrivateCaseUnionTypes = ConcurrentDictionary<Type, UnionCaseInfo option>()
 
+    let private convertableUnionTypes = ConcurrentDictionary<Type, ConvertableUnionType option>()
+
+    let private (|ConvertableUnionType|_|) (t: Type) =
+        convertableUnionTypes.GetOrAdd(t, (fun _ ->
+            if FSharpType.IsUnion (t) 
+            then Some ConvertableUnionType.Public
+            elif FSharpType.IsUnion(t, true)
+            then
+                let ucies = FSharpType.GetUnionCases(t, true)
+                match ucies.Length with 
+                | 0 -> None
+                | 1 -> Some (ConvertableUnionType.SinglePrivate (ucies.[0]))
+                | i when i > 1 -> None
+                | _ -> failwith "Invalid token"
+            else None
+        ))
+
+    let (|SinglePrivateCase|_|) (t: Type) =
+        match t with 
+        | ConvertableUnionType unionType ->
+            match unionType with 
+            | ConvertableUnionType.SinglePrivate uci -> Some uci
+            | _ -> None
+        | _ -> None
+
+    let isConvertableUnionType t =
+        match t with 
+        | ConvertableUnionType _ -> true
+        | _ -> false
 
 open Cache
 open System
@@ -146,19 +180,6 @@ type FSharpJsonConverter() =
         FSharpType.GetUnionCases(t, true)
         |> Array.find (fun uci -> uci.Name = name)
 
-    let (|SinglePrivateCase|_|) t = 
-        singlePrivateCaseUnionTypes.GetOrAdd(t, (fun _ ->
-            match FSharpType.IsUnion (t, true) with 
-            | true ->
-                match FSharpType.GetUnionCases(t, true) with
-                | [| uci |] -> 
-                    let ctors = uci.DeclaringType.GetConstructors()
-                    match ctors.Length with 
-                    | 0 -> Some uci
-                    | _ -> None
-                | _ -> None
-            | _ -> None
-        ))
 
     let isRegisteredParentType (tp: Type) =
         inheritedConverterTypes.ContainsKey(tp.FullName)
@@ -184,7 +205,7 @@ type FSharpJsonConverter() =
                 then Kind.Binary
                 elif FSharpType.IsTuple t
                 then Kind.Tuple
-                elif (FSharpType.IsUnion (t, true) && t.Name <> "FSharpList`1")
+                elif (isConvertableUnionType t && t.Name <> "FSharpList`1")
                 then Kind.Union
                 elif (FSharpType.IsRecord t)
                 then Kind.Record
@@ -251,14 +272,12 @@ type FSharpJsonConverter() =
             | true, Kind.Union ->
                 let uci, fields = FSharpValue.GetUnionFields(value, t, true)
 
-                let caseName = uci.Name
-
                 if fields.Length = 0
-                then serializer.Serialize(writer, caseName)
+                then serializer.Serialize(writer, uci.Name)
                         
                 else
                     writer.WriteStartObject()
-                    writer.WritePropertyName(caseName)
+                    writer.WritePropertyName(uci.Name)
 
                     if fields.Length = 1
                     then serializer.Serialize(writer, fields.[0])
