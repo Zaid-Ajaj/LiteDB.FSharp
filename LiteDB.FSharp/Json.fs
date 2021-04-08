@@ -266,9 +266,9 @@ type FSharpJsonConverter() =
                     | ConvertableUnionType convertableUnionType ->
                         match convertableUnionType with 
                         | ConvertableUnionType.SinglePrivate uci -> 
-                            /// make uciName to '_' as anonymous property name
+                            /// make uciName to 'case' as anonymous property name
                             /// so private case union is still querable after Case Name is changed
-                            "_", snd (FSharpValue.GetUnionFields(value, t, true))
+                            "case", snd (FSharpValue.GetUnionFields(value, t, true))
 
                         | ConvertableUnionType.Public _ -> 
                             let uci, fields = FSharpValue.GetUnionFields(value, t)
