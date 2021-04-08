@@ -84,6 +84,19 @@ let liteDatabaseUsage mapper=
                     | { Id = SingleCaseDU 20; Value = "John" } -> pass()
                     | otherwise -> fail()
 
+        testCase "findOne works when Id is a private single case union" <| fun _ ->
+            useJsonMapperDatabase <| fun db ->
+                let records = db.GetCollection<RecordWithSinglePrivateUnion>("documents")
+                let record = { Id = 1; PhoneNumber = PhoneNumber.Create 16511825922L }
+                records.Insert(record) |> ignore
+                records.findOne (fun document -> document.PhoneNumber = record.PhoneNumber)
+                |> function
+                    | { Id = 1; PhoneNumber = phoneNumber } -> 
+                        match phoneNumber.Value with 
+                        | 16511825922L -> pass()
+                        | _ -> fail()
+                    | otherwise -> fail()
+
         testCase "Uninitialized values are populated with default values" <| fun _ ->
             useDatabase mapper<| fun db ->
                 let records = db.GetCollection<BsonDocument>("documents")

@@ -261,14 +261,26 @@ type FSharpJsonConverter() =
                 let values = FSharpValue.GetTupleFields(value)
                 serializer.Serialize(writer, values)
             | true, Kind.Union ->
-                let uci, fields = FSharpValue.GetUnionFields(value, t, true)
+                let uciName, fields =
+                    match t with 
+                    | ConvertableUnionType convertableUnionType ->
+                        match convertableUnionType with 
+                        | ConvertableUnionType.SinglePrivate uci -> 
+                            /// make uciName to '_' as anonymous property name
+                            /// so private case union is still querable after Case Name is changed
+                            "_", snd (FSharpValue.GetUnionFields(value, t, true))
+
+                        | ConvertableUnionType.Public _ -> 
+                            let uci, fields = FSharpValue.GetUnionFields(value, t)
+                            uci.Name, fields
+                    | _ -> failwithf "%s is not an convertable union type" t.FullName
 
                 if fields.Length = 0
-                then serializer.Serialize(writer, uci.Name)
+                then serializer.Serialize(writer, uciName)
                         
                 else
                     writer.WriteStartObject()
-                    writer.WritePropertyName(uci.Name)
+                    writer.WritePropertyName(uciName)
 
                     if fields.Length = 1
                     then serializer.Serialize(writer, fields.[0])
