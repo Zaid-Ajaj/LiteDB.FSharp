@@ -5,6 +5,7 @@ open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 open LiteDB
 open Microsoft.FSharp.Reflection
+open Cache
 
 module Query =
     let internal mapper = FSharpBsonMapper()
@@ -49,7 +50,7 @@ module Query =
                 |> Bson.deserializeField<string>
                 |> String.IsNullOrEmpty)
 
-        | Patterns.PropertyEqual (propName, value) when FSharpType.IsUnion (value.GetType()) ->
+        | Patterns.PropertyEqual (propName, value) when isConvertableUnionType (value.GetType()) ->
             Query.EQ(propName, Bson.serializeField value)
 
          | Patterns.PropertyEqual (propName, value) when FSharpType.IsRecord (value.GetType()) ->

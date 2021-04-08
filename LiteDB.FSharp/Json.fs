@@ -92,9 +92,27 @@ module private Cache =
     let inheritedConverterTypes = ConcurrentDictionary<string,HashSet<Type>>()
     let inheritedTypeQuickAccessor = ConcurrentDictionary<string * list<string>,Type>()
 
-    let convertableUnionTypes = ConcurrentDictionary<Type, ConvertableUnionType option>()
+    let private convertableUnionTypes = ConcurrentDictionary<Type, ConvertableUnionType option>()
 
+    let (|ConvertableUnionType|_|) (t: Type) =
+        convertableUnionTypes.GetOrAdd(t, (fun _ ->
+            if FSharpType.IsUnion (t) 
+            then Some (ConvertableUnionType.Public (FSharpType.GetUnionCases t))
+            elif FSharpType.IsUnion(t, true)
+            then
+                let ucies = FSharpType.GetUnionCases(t, true)
+                match ucies.Length with 
+                | 0 -> None
+                | 1 -> Some (ConvertableUnionType.SinglePrivate (ucies.[0]))
+                | i when i > 1 -> None
+                | _ -> failwith "Invalid token"
+            else None
+        ))
 
+    let isConvertableUnionType t =
+        match t with 
+        | ConvertableUnionType _ -> true
+        | _ -> false
 
 open Cache
 open System
@@ -136,28 +154,6 @@ module DefaultValue =
 /// See https://goo.gl/F6YiQk
 type FSharpJsonConverter() =
     inherit Newtonsoft.Json.JsonConverter()
-
-    let (|ConvertableUnionType|_|) (t: Type) =
-        convertableUnionTypes.GetOrAdd(t, (fun _ ->
-            if FSharpType.IsUnion (t) 
-            then Some (ConvertableUnionType.Public (FSharpType.GetUnionCases t))
-            elif FSharpType.IsUnion(t, true)
-            then
-                let ucies = FSharpType.GetUnionCases(t, true)
-                match ucies.Length with 
-                | 0 -> None
-                | 1 -> Some (ConvertableUnionType.SinglePrivate (ucies.[0]))
-                | i when i > 1 -> None
-                | _ -> failwith "Invalid token"
-            else None
-        ))
-
-    let isConvertableUnionType t =
-        match t with 
-        | ConvertableUnionType _ -> true
-        | _ -> false
-
-
 
     let advance(reader: JsonReader) =
         reader.Read() |> ignore
