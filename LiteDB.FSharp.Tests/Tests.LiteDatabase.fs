@@ -84,7 +84,7 @@ let liteDatabaseUsage mapper=
                     | { Id = SingleCaseDU 20; Value = "John" } -> pass()
                     | otherwise -> fail()
 
-        testCase "findOne works when Id is a private single case union" <| fun _ ->
+        testCase "Query expression with single private case union is supported" <| fun _ ->
             useJsonMapperDatabase <| fun db ->
                 let records = db.GetCollection<RecordWithSinglePrivateUnion>("documents")
                 let record = { Id = 1; PhoneNumber = PhoneNumber.Create 16511825922L }
