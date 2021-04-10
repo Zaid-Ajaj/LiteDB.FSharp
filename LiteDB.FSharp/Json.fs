@@ -29,7 +29,7 @@ open System.Text.RegularExpressions
 
 
 /// using unconstructable CaseInfoProtector to prevent directly invoking ICaseInfo.CaseInfo
-/// As we only get generic type infomation there
+/// As we only get generic type information there
 type CaseInfoProtector private () = class end
     
 
@@ -125,7 +125,19 @@ module private Cache =
                             fullName = typedefof<ICaseInfo<_>>.FullName)
 
                     match icaseInfo with 
-                    | Some _ -> Some (ConvertableUnionType.SinglePrivate (ucies.[0]))
+                    | Some icaseInfo ->
+                        let uci = ucies.[0]
+                        let genericArguments = icaseInfo.GetGenericArguments()
+                        let fieldTypeInfos = 
+                            uci.GetFields()
+                            |> Array.map (fun propInfo -> propInfo.PropertyType)
+                        match genericArguments = fieldTypeInfos with 
+                        | true -> Some (ConvertableUnionType.SinglePrivate uci)
+                        | false -> 
+                            let fieldInfoNames =
+                                fieldTypeInfos
+                                |> Array.map (fun t -> t.FullName)
+                            failwithf "Generic type definition of ICaseInfo should be consistent to %A" fieldInfoNames
                     | None -> None
 
                 | i when i > 1 -> None
