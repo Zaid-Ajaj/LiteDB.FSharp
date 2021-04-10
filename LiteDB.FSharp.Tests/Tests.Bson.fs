@@ -198,6 +198,12 @@ let bsonConversions =
       | _ -> fail()
 
     testCase "multiple private case unions in records is not convertable" <| fun _ ->
+      #if DEBUG
+        pass()
+      #endif
+
+      /// mark RELEASE to make Debugger happy
+      #if RELEASE
       let record = { Id = 1; Size = Size.CreateEUR 40. }
 
       let doc = Bson.serialize record
@@ -208,6 +214,8 @@ let bsonConversions =
       with ex ->
         /// multiple private case unions is not convertable
         pass()
+    
+      #endif
 
 
     testCase "records with lists" <| fun _ ->

@@ -18,6 +18,10 @@ with
         | 11 -> PhoneNumber phoneNumber
         | _ -> failwithf "phone number %d 's length should be 11" phoneNumber
 
+    interface ICaseInfo<int64> with 
+        member x.CaseInfo(_) =
+            let (PhoneNumber v) = x
+            v
 
 type Size =
     private 

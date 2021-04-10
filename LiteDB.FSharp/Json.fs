@@ -27,6 +27,16 @@ open System.Collections.Generic
 open System.Collections.Concurrent
 open System.Text.RegularExpressions
 
+
+/// using unconstructable CaseInfoProtector to prevent directly invoking ICaseInfo.CaseInfo
+/// As we only get generic type infomation there
+type CaseInfoProtector private () = class end
+    
+
+type ICaseInfo<'T> =
+    abstract member CaseInfo: CaseInfoProtector -> 'T
+
+
 type Kind =
     | Other = 0
     | Option = 1
@@ -103,7 +113,21 @@ module private Cache =
                 let ucies = FSharpType.GetUnionCases(t, true)
                 match ucies.Length with 
                 | 0 -> None
-                | 1 -> Some (ConvertableUnionType.SinglePrivate (ucies.[0]))
+                | 1 -> 
+                    let icaseInfo = 
+                        t.GetInterfaces()
+                        |> Array.tryFind(fun m -> 
+                            let fullName = 
+                                if m.IsGenericType 
+                                    then m.GetGenericTypeDefinition().FullName
+                                    else m.FullName
+
+                            fullName = typedefof<ICaseInfo<_>>.FullName)
+
+                    match icaseInfo with 
+                    | Some _ -> Some (ConvertableUnionType.SinglePrivate (ucies.[0]))
+                    | None -> None
+
                 | i when i > 1 -> None
                 | _ -> failwith "Invalid token"
             else None
