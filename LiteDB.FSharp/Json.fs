@@ -28,13 +28,13 @@ open System.Collections.Concurrent
 open System.Text.RegularExpressions
 
 
-/// using unconstructable CaseInfoProtector to prevent directly invoking ICaseInfo.CaseInfo
+/// using unconstructable CaseInfoProtector to prevent directly invoking ISingleCaseInfo.CaseInfo
 /// As we only get generic type information there
-type CaseInfoProtector private () = class end
+type SingleCaseInfoProtector private () = class end
     
 
-type ICaseInfo<'T> =
-    abstract member CaseInfo: CaseInfoProtector -> 'T
+type ISingleCaseInfo<'T> =
+    abstract member CaseInfo: SingleCaseInfoProtector -> 'T
 
 
 type Kind =
@@ -122,7 +122,7 @@ module private Cache =
                                     then m.GetGenericTypeDefinition().FullName
                                     else m.FullName
 
-                            fullName = typedefof<ICaseInfo<_>>.FullName)
+                            fullName = typedefof<ISingleCaseInfo<_>>.FullName)
 
                     match icaseInfo with 
                     | Some icaseInfo ->
