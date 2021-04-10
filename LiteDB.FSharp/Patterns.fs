@@ -83,7 +83,7 @@ module Patterns =
             | PropertyGet (expr, propInfo, _) -> 
                 match expr with 
                 | Some expr -> loop ((propInfo.Name) :: accum) expr
-                | None -> accum
+                | None -> propInfo.Name :: accum
             | _ -> accum
 
         match loop [] expr with 
