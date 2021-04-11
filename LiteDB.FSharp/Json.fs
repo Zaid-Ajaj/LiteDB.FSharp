@@ -127,7 +127,15 @@ module private Cache =
                     match icaseInfo with 
                     | Some icaseInfo ->
                         let uci = ucies.[0]
-                        let genericArguments = icaseInfo.GetGenericArguments()
+                        let genericArguments = 
+                            let genericArguments = icaseInfo.GetGenericArguments()
+                            match genericArguments with 
+                            | [| genericArgument |] ->
+                                match FSharpType.IsTuple genericArgument with 
+                                | true -> genericArgument.GetGenericArguments()
+                                | false -> genericArguments 
+                            | _ -> genericArguments
+
                         let fieldTypeInfos = 
                             uci.GetFields()
                             |> Array.map (fun propInfo -> propInfo.PropertyType)
@@ -137,7 +145,7 @@ module private Cache =
                             let fieldInfoNames =
                                 fieldTypeInfos
                                 |> Array.map (fun t -> t.FullName)
-                            failwithf "Generic type definition of ICaseInfo should be consistent to %A" fieldInfoNames
+                            failwithf "%s 's Generic type definition of ISingleCaseInfo should be consistent to %A" t.FullName fieldInfoNames
                     | None -> None
 
                 | i when i > 1 -> None
