@@ -18,6 +18,7 @@ type RecordWithLong = { id: int; long: int64 }
 type RecordWithFloat = { id: int; float: float }
 type RecordWithGuid = { id: int; guid: Guid }
 type RecordWithBytes = { id: int; data:byte[] }
+type RecordWithTuple = { id: int; tuple: string * int }
 type RecordWithObjectId = { id: LiteDB.ObjectId }
 type RecordWithOptionOfValueType = { id:int; optionOfValueType: Option<int>  }
 type RecordWithOptionOfReferenceType = { id:int; optionOfReferenceType : Option<Person>  }
