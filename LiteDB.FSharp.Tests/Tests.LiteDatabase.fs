@@ -87,14 +87,15 @@ let liteDatabaseUsage mapper=
         testCase "Query expression with single private case union is supported" <| fun _ ->
             useJsonMapperDatabase <| fun db ->
                 let records = db.GetCollection<RecordWithSinglePrivateUnion>("documents")
-                let record = { Id = 1; PhoneNumber = PhoneNumber.Create 16511825922L }
+                let record = { Id = 1; YoungPerson = YoungPerson.Create ("Mike", 30, PhoneNumber.Create 16511825922L) }
+
                 records.Insert(record) |> ignore
-                records.findOne (fun document -> document.PhoneNumber = record.PhoneNumber)
+                records.findOne (fun document -> document.YoungPerson = record.YoungPerson)
                 |> function
-                    | { Id = 1; PhoneNumber = phoneNumber } -> 
-                        match phoneNumber.Value with 
-                        | 16511825922L -> pass()
-                        | _ -> fail()
+                    | { Id = 1; YoungPerson = youngPerson } -> 
+                      match youngPerson.Name, youngPerson.Age, youngPerson.PhoneNumber.Value with 
+                      | "Mike", 30, 16511825922L -> pass()
+                      | _ -> fail()
                     | otherwise -> fail()
 
         testCase "Uninitialized values are populated with default values" <| fun _ ->

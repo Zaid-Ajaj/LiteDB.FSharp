@@ -187,13 +187,13 @@ let bsonConversions =
       | otherwise -> fail() 
 
     testCase "records with single private case union" <| fun _ ->
-      let record = { Id = 1; PhoneNumber = PhoneNumber.Create 16511825922L }
+      let record = { Id = 1; YoungPerson = YoungPerson.Create ("Mike", 30, PhoneNumber.Create 16511825922L) }
 
       let doc = Bson.serialize record
       match Bson.deserialize<RecordWithSinglePrivateUnion> doc with
-      | { Id = 1; PhoneNumber = phoneNumber } -> 
-        match phoneNumber.Value with 
-        | 16511825922L -> pass()
+      | { Id = 1; YoungPerson = youngPerson } -> 
+        match youngPerson.Name, youngPerson.Age, youngPerson.PhoneNumber.Value with 
+        | "Mike", 30, 16511825922L -> pass()
         | _ -> fail()
       | _ -> fail()
 

@@ -23,6 +23,30 @@ with
             let (PhoneNumber v) = x
             v
 
+type YoungPerson = private YoungPerson of name: string * age: int * phoneNumber: PhoneNumber
+with 
+    member x.Name =
+        let (YoungPerson (name, age, phoneNumber)) = x
+        name
+
+    member x.PhoneNumber = 
+        let (YoungPerson (name, age, phoneNumber)) = x
+        phoneNumber
+
+    member x.Age = 
+        let (YoungPerson (name, age, phoneNumber)) = x
+        age
+
+    static member Create(name, age, phoneNumber) =
+        if age < 35 
+        then YoungPerson(name, age, phoneNumber)
+        else failwithf "Young person's age should be <= %d" 35
+
+    interface ISingleCaseInfo<string * int * PhoneNumber> with 
+        member x.CaseInfo(_) =
+            let (YoungPerson (name, age, phoneNumber)) = x
+            name, age, phoneNumber
+
 type Size =
     private 
         | US of float
@@ -36,7 +60,7 @@ with
 
 
 type RecordWithSimpleUnion = { Id: int; Union: SimpleUnion }
-type RecordWithSinglePrivateUnion = { Id: int; PhoneNumber: PhoneNumber }
+type RecordWithSinglePrivateUnion = { Id: int; YoungPerson: YoungPerson }
 type RecordWithMultiplePrivateUnions = { Id: int; Size: Size }
 type RecordWithList = { Id: int; List: int list }
 type Maybe<'a> = Just of 'a | Nothing
