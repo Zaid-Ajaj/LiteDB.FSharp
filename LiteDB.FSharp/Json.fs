@@ -28,14 +28,6 @@ open System.Collections.Concurrent
 open System.Text.RegularExpressions
 
 
-/// using unconstructable CaseInfoProtector to prevent directly invoking ISingleCaseInfo.CaseInfo
-/// As we only get generic type information there
-type SingleCaseInfoProtector private () = class end
-    
-
-type ISingleCaseInfo<'T> =
-    abstract member CaseInfo: SingleCaseInfoProtector -> 'T
-
 
 type Kind =
     | Other = 0
@@ -113,41 +105,7 @@ module private Cache =
                 let ucies = FSharpType.GetUnionCases(t, true)
                 match ucies.Length with 
                 | 0 -> None
-                | 1 -> 
-                    let icaseInfo = 
-                        t.GetInterfaces()
-                        |> Array.tryFind(fun m -> 
-                            let fullName = 
-                                if m.IsGenericType 
-                                    then m.GetGenericTypeDefinition().FullName
-                                    else m.FullName
-
-                            fullName = typedefof<ISingleCaseInfo<_>>.FullName)
-
-                    match icaseInfo with 
-                    | Some icaseInfo ->
-                        let uci = ucies.[0]
-                        let genericArguments = 
-                            let genericArguments = icaseInfo.GetGenericArguments()
-                            match genericArguments with 
-                            | [| genericArgument |] ->
-                                match FSharpType.IsTuple genericArgument with 
-                                | true -> genericArgument.GetGenericArguments()
-                                | false -> genericArguments 
-                            | _ -> genericArguments
-
-                        let fieldTypeInfos = 
-                            uci.GetFields()
-                            |> Array.map (fun propInfo -> propInfo.PropertyType)
-                        match genericArguments = fieldTypeInfos with 
-                        | true -> Some (ConvertableUnionType.SinglePrivate uci)
-                        | false -> 
-                            let fieldInfoNames =
-                                fieldTypeInfos
-                                |> Array.map (fun t -> t.FullName)
-                            failwithf "%s 's Generic type definition of ISingleCaseInfo should be consistent to %A" t.FullName fieldInfoNames
-                    | None -> None
-
+                | 1 -> Some (ConvertableUnionType.SinglePrivate ucies.[0])
                 | i when i > 1 -> None
                 | _ -> failwith "Invalid token"
             else None

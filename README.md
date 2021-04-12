@@ -180,28 +180,6 @@ mapper.DbRef<Order,_>(fun c -> c.Company)
 
 ```
 
-### Experiment: Single private case union
-We must implement ISingleCaseInfo<'T> here 
-Why: More disscussion [here](https://github.com/Zaid-Ajaj/LiteDB.FSharp/issues/55#issuecomment-817077584) 
-```fsharp
-type PhoneNumber = private PhoneNumber of int64
-with 
-    member x.Value =
-        let (PhoneNumber v) = x
-        v
-
-    static member Create(phoneNumber: int64) = 
-        match phoneNumber.ToString().Length with 
-        | 11 -> PhoneNumber phoneNumber
-        | _ -> failwithf "phone number %d 's length should be 11" phoneNumber
-
-    interface ISingleCaseInfo<int64> with 
-        member x.CaseInfo(_) =
-            let (PhoneNumber v) = x
-            v
-
-```
-
 ### Inheritence 
 `Item1` and `Item2` are inherited from `IItem`
 
