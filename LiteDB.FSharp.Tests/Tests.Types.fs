@@ -1,10 +1,60 @@
 module Tests.Types
 
 open System
+open LiteDB.FSharp
+
 type Person = { Id: int; Name: string }
 type LowerCaseId = { id: int; age:int }
 type SimpleUnion = One | Two
+
+type PhoneNumber = private PhoneNumber of int64
+with 
+    member x.Value =
+        let (PhoneNumber v) = x
+        v
+
+    static member Create(phoneNumber: int64) = 
+        match phoneNumber.ToString().Length with 
+        | 11 -> PhoneNumber phoneNumber
+        | _ -> failwithf "phone number %d 's length should be 11" phoneNumber
+
+
+type YoungPerson = private YoungPerson of name: string * age: int * phoneNumber: PhoneNumber
+with 
+    member x.Name =
+        let (YoungPerson (name, age, phoneNumber)) = x
+        name
+
+    member x.PhoneNumber = 
+        let (YoungPerson (name, age, phoneNumber)) = x
+        phoneNumber
+
+    member x.Age = 
+        let (YoungPerson (name, age, phoneNumber)) = x
+        age
+
+    static member Create(name, age, phoneNumber) =
+        if age < 35 
+        then YoungPerson(name, age, phoneNumber)
+        else failwithf "Young person's age should be <= %d" 35
+
+
+
+type Size =
+    private 
+        | US of float
+        | EUR of float
+        | UK of float
+with 
+    static member CreateEUR(eur: float) = 
+        if eur >=  19. && eur <= 46. && eur % 0.5 = 0.
+        then Size.EUR eur
+        else failwithf "%f is not a valid eur value" eur
+
+
 type RecordWithSimpleUnion = { Id: int; Union: SimpleUnion }
+type RecordWithSinglePrivateUnion = { Id: int; YoungPerson: YoungPerson }
+type RecordWithMultiplePrivateUnions = { Id: int; Size: Size }
 type RecordWithList = { Id: int; List: int list }
 type Maybe<'a> = Just of 'a | Nothing
 type RecordWithGenericUnion<'t> = { Id: int; GenericUnion: Maybe<'t> }
@@ -19,6 +69,7 @@ type RecordWithLong = { id: int; long: int64 }
 type RecordWithFloat = { id: int; float: float }
 type RecordWithGuid = { id: int; guid: Guid }
 type RecordWithBytes = { id: int; data:byte[] }
+type RecordWithTuple = { id: int; tuple: string * int }
 type RecordWithObjectId = { id: LiteDB.ObjectId }
 type RecordWithOptionOfValueType = { id:int; optionOfValueType: Option<int>  }
 type RecordWithOptionOfReferenceType = { id:int; optionOfReferenceType : Option<Person>  }

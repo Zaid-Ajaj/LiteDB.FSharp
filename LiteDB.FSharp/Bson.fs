@@ -77,8 +77,14 @@ module Bson =
             let typeName = collectionType.Name
             if List.contains typeName typeNames then
                 collectionType.GetGenericArguments().[0]
+                |> Array.singleton
             else if collectionType.IsArray then
                 collectionType.GetElementType()
+                |> Array.singleton
+
+            else if FSharpType.IsTuple collectionType then
+                collectionType.GetGenericArguments()
+            
             else failwithf "Could not extract element type from collection of type %s"  collectionType.FullName           
         
         let getKeyFieldName (entityType: Type)= 
@@ -122,15 +128,17 @@ module Bson =
                         // if property is BsonArray then loop through each element
                         // and if that element is a record, then re-write _id back to original
                         let collectionType = entityType.GetProperty(y).PropertyType
-                        let elementType = getCollectionElementType collectionType
-                        if FSharpType.IsRecord elementType then
-                            let docKey = getKeyFieldName elementType
-                            for bson in bsonArray do
-                                if bson.IsDocument 
-                                then
-                                  let doc = bson.AsDocument
-                                  let keys = List.ofSeq doc.RawValue.Keys
-                                  rewriteKey keys doc elementType docKey
+
+                        let elementTypes = getCollectionElementType collectionType
+                        for elementType in elementTypes do
+                            if FSharpType.IsRecord elementType then
+                                let docKey = getKeyFieldName elementType
+                                for bson in bsonArray do
+                                    if bson.IsDocument 
+                                    then
+                                      let doc = bson.AsDocument
+                                      let keys = List.ofSeq doc.RawValue.Keys
+                                      rewriteKey keys doc elementType docKey
                         
                         continueToNext()
                     |_ -> 
