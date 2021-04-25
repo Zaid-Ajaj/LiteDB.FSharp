@@ -186,6 +186,38 @@ let bsonConversions =
       | { Id = 2; Union = Two } -> pass()
       | otherwise -> fail() 
 
+    testCase "records with single private case union" <| fun _ ->
+      let record = { Id = 1; YoungPerson = YoungPerson.Create ("Mike", 30, PhoneNumber.Create 16511825922L) }
+
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithSinglePrivateUnion> doc with
+      | { Id = 1; YoungPerson = youngPerson } -> 
+        match youngPerson.Name, youngPerson.Age, youngPerson.PhoneNumber.Value with 
+        | "Mike", 30, 16511825922L -> pass()
+        | _ -> fail()
+      | _ -> fail()
+
+    testCase "multiple private case unions in records is not convertable" <| fun _ ->
+      #if DEBUG
+        pass()
+      #endif
+
+      /// mark RELEASE to make Debugger happy
+      #if RELEASE
+      let record = { Id = 1; Size = Size.CreateEUR 40. }
+
+      let doc = Bson.serialize record
+      try 
+        Bson.deserialize<RecordWithMultiplePrivateUnions> doc |> ignore
+        fail()
+
+      with ex ->
+        /// multiple private case unions is not convertable
+        pass()
+    
+      #endif
+
+
     testCase "records with lists" <| fun _ ->
       let fstRecord = { Id = 1; List = [1 .. 10] }
       let doc = Bson.serialize fstRecord
