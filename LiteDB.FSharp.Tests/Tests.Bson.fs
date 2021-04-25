@@ -351,6 +351,13 @@ let bsonConversions =
       | { id = 1; data = xs } when xs = bytes -> pass()
       | otherwise -> fail()
     
+    testCase "Bson (de)serialization of tuple data works" <| fun _ ->
+      let record = {id = 1; tuple = ("Mike", 30) }
+      let doc = Bson.serialize record
+      match Bson.deserialize<RecordWithTuple> doc with
+      | { id = 1; tuple = ("Mike", 30) } -> pass()
+      | otherwise -> fail()
+
     testCase "(De)serialization of field work" <| fun _ ->
       let sample = Generic (Just 5)
       let serialized = Bson.serializeField sample
