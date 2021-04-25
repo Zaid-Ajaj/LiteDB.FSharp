@@ -64,6 +64,7 @@ type RecordWithArray = { id: int; arr: int[] }
 type RecordWithOptionalArray = { id: int; arr: int[] option }
 type RecordWithResizeArray = { id: int; resizeArray: ResizeArray<int> }
 type RecordWithDecimal = { id: int; number: decimal }
+type RecordWithEnum = { id: int; color: ConsoleColor }
 type RecordWithLong = { id: int; long: int64 }
 type RecordWithFloat = { id: int; float: float }
 type RecordWithGuid = { id: int; guid: Guid }
