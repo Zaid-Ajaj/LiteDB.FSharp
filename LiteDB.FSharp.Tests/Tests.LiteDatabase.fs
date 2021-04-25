@@ -61,7 +61,7 @@ let useJsonMapperDatabase (f: LiteDatabase -> unit) =
     use db = new LiteDatabase(memoryStream, mapper)
     f db
 
-let liteDatabaseUsage mapper=
+let liteDatabaseUsage mapper =
     testList "LiteDatabase usage" [
 
         testCase "Persisting documents with mutable fields should work" <| fun _ ->
@@ -83,7 +83,6 @@ let liteDatabaseUsage mapper=
                 |> function
                     | { Id = SingleCaseDU 20; Value = "John" } -> pass()
                     | otherwise -> fail()
-
 
         testCase "Query expression with single private case union is supported" <| fun _ ->
             useJsonMapperDatabase <| fun db ->
@@ -168,7 +167,6 @@ let liteDatabaseUsage mapper=
                 match docs.tryFindOne(fun doc -> doc.color = ConsoleColor.Gray ) with 
                 | Some { id = 1; color = ConsoleColor.Gray } -> pass()
                 | _ -> fail()
-
 
         testCase "Documents with optional DateTime = Some can be used" <| fun _ ->
             useDatabase mapper<| fun db ->

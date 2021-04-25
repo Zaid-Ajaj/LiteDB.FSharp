@@ -30,7 +30,7 @@ module Query =
             Query.LT("_id", BsonValue(value))
 
         | Patterns.PropertyLessThanOrEqual (("Id" | "id" | "ID"), value) ->
-             Query.LTE("_id", BsonValue(value))
+            Query.LTE("_id", BsonValue(value))
 
         | Patterns.StringContains (propName, value) ->
             Query.Where(propName, fun bsonValue ->
@@ -57,8 +57,8 @@ module Query =
             Query.EQ(propName, Bson.serializeField value)
 
         | Patterns.PropertyEqual (propName, value) when (value.GetType().IsEnum) ->
-           let bson = 
-               match Type.GetTypeCode(value.GetType().GetEnumUnderlyingType()) with 
+           let bson =
+               match Type.GetTypeCode(value.GetType().GetEnumUnderlyingType()) with
                | TypeCode.Byte    ->  BsonValue(value :?> Byte   )
                | TypeCode.Decimal ->  BsonValue(value :?> Decimal)
                | TypeCode.Double  ->  BsonValue(value :?> Double )
@@ -70,7 +70,7 @@ module Query =
                | TypeCode.UInt64  ->  BsonValue(value :?> UInt64 )
                | TypeCode.UInt32  ->  BsonValue(value :?> UInt32 )
                | TypeCode.SByte   ->  BsonValue(value :?> SByte  )
-               | tpCode -> failwithf "tpCode %A is not an enum underlying type" tpCode 
+               | tpCode -> failwithf "tpCode %A is not an enum underlying type" tpCode
 
            Query.EQ(propName, bson)
 

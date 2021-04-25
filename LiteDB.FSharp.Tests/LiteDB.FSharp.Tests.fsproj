@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\LiteDB.FSharp\LiteDB.FSharp.fsproj" />
@@ -14,5 +14,7 @@
     <Compile Include="Tests.InheritedType.fs" />
     <Compile Include="Tests.Runner.fs" />
   </ItemGroup>
-  <Import Project="..\.paket\Paket.Restore.targets" />
+  <ItemGroup>
+    <PackageReference Include="Expecto" Version="9.0.2" />
+  </ItemGroup>
 </Project>
