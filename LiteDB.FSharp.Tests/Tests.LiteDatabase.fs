@@ -25,7 +25,7 @@ type RecordWithBoolean = { Id: int; HasValue: bool }
 
 type RecordWithStr = { Id : int; Name: string }
 
-type NestedRecord = { Inner : PersonDocument }
+type NestedRecord = { Id: int; Inner : PersonDocument }
 
 type RecordWithOptionalDate = {
     Id : int
@@ -286,14 +286,26 @@ let liteDatabaseUsage mapper=
                             | n -> fail()
 
 
-        testCase "Extracting values from nested getter works" <| fun _ ->
+        testCase "Extracting values from right nested getter works" <| fun _ ->
             useDatabase mapper<| fun db ->
                 let people = db.GetCollection<PersonDocument>("people")
                 let time = DateTime(2017, 10, 15)
                 let mike = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
-                let nestedRecord = { Inner = mike }
+                let nestedRecord = { Id = 1; Inner = mike }
                 people.Insert(mike) |> ignore
                 people.findMany <@ fun person -> person.Name = nestedRecord.Inner.Name @>
+                |> Seq.length
+                |> function | 1 -> pass()
+                            | n -> fail()
+
+        testCase "Extracting values from left nested getter works" <| fun _ ->
+            useDatabase mapper<| fun db ->
+                let people = db.GetCollection<NestedRecord>("nestedRecord")
+                let time = DateTime(2017, 10, 15)
+                let mike = { Id = 1; Name = "Mike"; Age = 10; Status = Married; DateAdded = time }
+                let nestedRecord = { Id = 1; Inner = mike }
+                people.Insert(nestedRecord) |> ignore
+                people.findMany <@ fun person -> person.Inner.Name = mike.Name @>
                 |> Seq.length
                 |> function | 1 -> pass()
                             | n -> fail()
