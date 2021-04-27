@@ -103,7 +103,7 @@ The function `Collection.FullSearch` expects a field name and a filter function 
 ```fsharp
 // Filtering albums released a year divisble by 5
 let searchResult = 
-    Collection.FullSearch("DateReleased", fun bsonValue ->
+    albums.FullSearch("DateReleased", fun bsonValue ->
         // dateReleased : DateTime
         let dateReleased = Bson.deserializeField<DateTime> bsonValue
         let year = dateReleased.Year
@@ -132,7 +132,7 @@ let record = { Id = 1; Shape = shape }
 records.Insert(record) |> ignore
 
 let results = 
-    Collection.FullSearch("Shape", fun bsonValue -> 
+    records.FullSearch("Shape", fun bsonValue -> 
         let shapeValue = Bson.deserializeField<Shape> bsonValue
         match shapeValue with
         | Composite [ Circle 2.0; other ] -> true
