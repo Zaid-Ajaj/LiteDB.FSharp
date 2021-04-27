@@ -1,21 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-      <Description>Advanced F# Support for LiteDB (v4.x) with query construction through quotation expressions</Description>
-      <TargetFrameworks>netstandard2.0</TargetFrameworks>
-      <GenerateDocumentationFile>true</GenerateDocumentationFile>
-      <RepositoryUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp.git</RepositoryUrl>
-      <PackageProjectUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp</PackageProjectUrl>
-      <PackageLicenseUrl>https://github.com/Zaid-Ajaj/LiteDB.FSharp/blob/master/LICENSE</PackageLicenseUrl>
-      <PackageTags>fsharp;litedb;embedded;database;document-database</PackageTags>
-      <Authors>Zaid Ajaj</Authors>
-      <Version>2.16.0</Version>
-      <PackageReleaseNotes>
-        Support tuple conversion, single union as ID. Don't touch DateTime when persisting the values
-      </PackageReleaseNotes>
+        <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <IsPackable>true</IsPackable>
+    </PropertyGroup>
+    <PropertyGroup>
+      <OutputPath>..\bin</OutputPath>
     </PropertyGroup>
     <ItemGroup>
-        <Compile Include="Linq.fs" />
         <Compile Include="Json.fs" />
         <Compile Include="Bson.fs" />
         <Compile Include="FSharpBsonMapper.fs" />
@@ -25,7 +18,7 @@
         <Compile Include="Extensions.fs" />
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="LiteDB" Version="[4.1.4, 5.0.0)" />
+      <PackageReference Include="LiteDB" Version="5.0.10" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
       <PackageReference Include="TypeShape" Version="9.0.0" />
       <PackageReference Update="FSharp.Core" Version="4.7.2" />

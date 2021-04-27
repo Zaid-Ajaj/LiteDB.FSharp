@@ -7,12 +7,30 @@ open LiteDB
 open LiteDB.FSharp
 open LiteDB.FSharp.Experimental
 open Tests.Types
-open LiteDB.FSharp.Linq
 open LiteDB.FSharp.Extensions
+open Microsoft.FSharp.Quotations
+open Microsoft.FSharp.Linq.RuntimeHelpers
+open System.Linq.Expressions
+
 
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
+
+
+module Linq =
+    let convertExpr (expr : Expr<'a -> 'b>) =
+      let linq = LeafExpressionConverter.QuotationToExpression expr
+      let call = linq :?> MethodCallExpression
+      let lambda = call.Arguments.[0] :?> LambdaExpression
+      Expression.Lambda<Func<'a, 'b>>(lambda.Body, lambda.Parameters) 
+      
+    [<RequireQualifiedAccess>]
+    type Expr =
+        static member prop(exp:Expression<Func<'T,'a>>) = exp    
+
+
+open Linq
 
 let useDataBase (mapper:FSharpBsonMapper) (f: LiteRepository -> unit) =
     mapper.DbRef<Order,_>(fun c -> c.Company)

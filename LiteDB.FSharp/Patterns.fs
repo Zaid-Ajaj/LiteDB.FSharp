@@ -77,102 +77,113 @@ module Patterns =
         | PropertyGetter value -> Some value
         | _ -> None
 
-    let (|NestedPropertyNameGetter|_|) expr =
+    let (|NestedPropertyNamesGetter|_|) expr =
         let rec loop accum expr =
-            match expr with
-            | PropertyGet (expr, propInfo, _) ->
-                match expr with
+            match expr with 
+            | PropertyGet (expr, propInfo, _) -> 
+                match expr with 
                 | Some expr -> loop ((propInfo.Name) :: accum) expr
                 | None -> propInfo.Name :: accum
             | _ -> accum
 
-        match loop [] expr with
-        | [] -> None
-        | propsNames -> Some (String.concat "." propsNames)
+        match expr with 
+        | PropertyGet _ ->  Some (loop [] expr)
+        | _ -> None
 
-    let (|LogicOp|_|) (info: MethodInfo) =
-        match info.Name with
+
+    let (|NestedPropertyNameGetter|_|) expr =
+        match expr with 
+        | NestedPropertyNamesGetter propNames -> 
+            match propNames with 
+            | [] -> Some "$"
+            | _ -> Some (String.concat "." propNames)
+        | _ -> None
+
+
+    let (|LogicOp|_|) (info: MethodInfo) = 
+        match info.Name with 
         | "op_Equality" -> Some "="
         | "op_NotEqual" -> Some "<>"
-        | "op_GreaterThan" -> Some ">"
-        | "op_LessThan" -> Some "<"
-        | "op_GreaterThanOrEqual" -> Some ">="
-        | "op_LessThanOrEqual" -> Some "<="
-        | otherwise -> None
+        | "op_GreaterThan" -> Some ">" 
+        | "op_LessThan" -> Some "<" 
+        | "op_GreaterThanOrEqual" -> Some ">=" 
+        | "op_LessThanOrEqual" -> Some "<=" 
+        | otherwise -> None 
 
-    let (|StringOp|_|) (info: MethodInfo) =
-        match info.DeclaringType.FullName ,info.Name with
-        | "System.String", name -> Some name
-        | _, _ -> None
+    let (|StringOp|_|) (info: MethodInfo) = 
+        match info.DeclaringType.FullName ,info.Name with  
+        | "System.String", name -> Some name 
+        | _, _ -> None 
 
 
-    let (|CoreOp|_|) (info: MethodInfo) =
-        match info.DeclaringType.FullName, info.Name with
-        | "Microsoft.FSharp.Core.Operators", "Not" -> Some "not"
-        | _ -> None
-
-    let (|PropertyEqual|_|) = function
-        | Call(_, LogicOp "=", [NestedPropertyNameGetter(name); ProvidedValue(value)]) ->
+    let (|CoreOp|_|) (info: MethodInfo) = 
+        match info.DeclaringType.FullName, info.Name with 
+        | "Microsoft.FSharp.Core.Operators", "Not" -> Some "not" 
+        | _ -> None 
+        
+    let (|PropertyEqual|_|) = function 
+        | Call(_, LogicOp "=", [NestedPropertyNameGetter(name); ProvidedValue(value)]) -> 
             Some (name, value)
-        | otherwise ->
+        | otherwise -> 
             None
 
-    let (|PropertyNotEqual|_|) = function
+    let (|PropertyNotEqual|_|) = function 
         | Call(_, LogicOp "<>", [NestedPropertyNameGetter(name); ProvidedValue(value)]) ->
-            Some (name, value)
-        | otherwise ->
+            Some (name, value) 
+        | otherwise -> 
             None
+     
+    let (|NotProperty|_|) = function 
+        | Call(_, CoreOp "not", [expr]) -> 
+            Some expr  
+        | _ -> None 
 
-    let (|NotProperty|_|) = function
-        | Call(_, CoreOp "not", [expr]) ->
-            Some expr
-        | _ -> None
+    let (|ProperyGreaterThan|_|) = function 
+       | Call(_, LogicOp ">", [NestedPropertyNameGetter(name); ProvidedValue(value)]) ->
+           Some (name, value)
+       | otherwise -> None
 
-    let (|ProperyGreaterThan|_|) = function
-        | Call(_, LogicOp ">", [NestedPropertyNameGetter(name); ProvidedValue(value)]) ->
-            Some (name, value)
-        | otherwise -> None
+    let (|StringNullOrWhiteSpace|_|) = function 
+        | Call(_, StringOp "IsNullOrWhiteSpace", [NestedPropertyNameGetter(name)]) -> 
+            Some (name) 
+        | otherwise -> None 
 
-    let (|StringNullOrWhiteSpace|_|) = function
-        | Call(_, StringOp "IsNullOrWhiteSpace", [NestedPropertyNameGetter(name)]) ->
+    let (|StringIsNullOrEmpty|_|) = function 
+        | Call(_, StringOp "IsNullOrEmpty", [NestedPropertyNameGetter(name)]) -> 
             Some (name)
-        | otherwise -> None
+        | otherwise -> None 
 
-    let (|StringIsNullOrEmpty|_|) = function
-        | Call(_, StringOp "IsNullOrEmpty", [NestedPropertyNameGetter(name)]) ->
-            Some (name)
-        | otherwise -> None
-
-    let (|StringContains|_|) = function
+    let (|StringContains|_|) = function 
         | Call(Some (NestedPropertyNameGetter(name)), StringOp "Contains",[ProvidedValue(value)]) ->
-            Some (name, value)
+            Some (name, value) 
+        | otherwise -> None 
+        
+    let (|ProperyGreaterThanOrEqual|_|) = function 
+       | Call(_, LogicOp ">=", [NestedPropertyNameGetter(name); ProvidedValue(value)]) ->
+           Some (name, value)
+       | otherwise -> None
+
+    let (|PropertyLessThan|_|) = function 
+       | Call(_, LogicOp "<", [NestedPropertyNameGetter(name); ProvidedValue(value)]) ->
+           Some (name, value)
+       | otherwise -> None
+
+    let (|BooleanGet|_|) = function 
+        | NestedPropertyNameGetter(name) -> 
+            Some name 
+        | otherwise -> None 
+    
+    let (|PropertyLessThanOrEqual|_|) = function 
+       | Call(_, LogicOp "<=", [NestedPropertyNameGetter(name); ProvidedValue(value)]) ->
+           Some (name, value)
+       | otherwise -> None
+
+    let (|Boolean|_|) = tryUnbox<bool> 
+
+    let (|LiteralBooleanValue|_|) = function 
+        | Value(Boolean(value), _) -> Some value 
         | otherwise -> None
 
-    let (|ProperyGreaterThanOrEqual|_|) = function
-        | Call(_, LogicOp ">=", [NestedPropertyNameGetter(name); ProvidedValue(value)]) ->
-            Some (name, value)
-        | otherwise -> None
-
-    let (|PropertyLessThan|_|) = function
-        | Call(_, LogicOp "<", [NestedPropertyNameGetter(name); ProvidedValue(value)]) ->
-            Some (name, value)
-        | otherwise -> None
-
-    let (|BooleanGet|_|) = function
-        | NestedPropertyNameGetter(name) ->
-            Some name
-        | otherwise -> None
-
-    let (|PropertyLessThanOrEqual|_|) = function
-        | Call(_, LogicOp "<=", [NestedPropertyNameGetter(name); ProvidedValue(value)]) ->
-            Some (name, value)
-        | otherwise -> None
-
-    let (|Boolean|_|) = tryUnbox<bool>
-
-    let (|LiteralBooleanValue|_|) = function
-        | Value(Boolean(value), _) -> Some value
-        | otherwise -> None
 
     let (|And|_|) = function
         | IfThenElse (left, right, Value(Boolean(false), _)) ->  Some (left, right)

@@ -5,12 +5,16 @@ open System.Linq.Expressions
 open System
 open Quotations.Patterns
 open FSharp.Reflection
+open Microsoft.FSharp.Quotations.DerivedPatterns
+open Microsoft.FSharp.Quotations
+open Microsoft.FSharp.Quotations.Patterns
 open System
+open Patterns
 
 module Extensions =
     open Microsoft.FSharp.Quotations
 
-    type LiteCollection<'t> with
+    type ILiteCollection<'t> with
         /// Tries to find a document using the Id of the document.
         member collection.TryFindById(id: BsonValue) =
             let result : 't = collection.FindById(id)
@@ -19,7 +23,7 @@ module Extensions =
             | _ -> Some result
 
         /// Tries to find a document using the given query
-        member collection.TryFind (query: Query) =
+        member collection.TryFind (query: BsonExpression) =
             let skipped = 0
             let limit = 1
             collection.Find(query, skipped, limit)
@@ -42,44 +46,57 @@ module Extensions =
             collection.Find(query)
 
         /// Executes a full search using the Where query
-        member collection.fullSearch<'t, 'u> (expr: Expr<'t -> 'u>) (pred: 'u -> bool) =
-            match expr with
-            | Lambda(_, PropertyGet(_, propInfo, [])) ->
-                let propName =
-                    match propInfo.Name with
-                    | ("Id" | "id" | "ID") -> "_id"
-                    | _ -> propInfo.Name
-                let query =
-                    Query.Where(propName, fun bsonValue ->
-                        bsonValue
-                        |> Bson.deserializeField<'u>
-                        |> pred)
-                collection.Find(query)
-            | _ ->
+        member private collection.FullSearch<'t, 'u> (propNames: string seq, pred: BsonValue -> bool) =
+            collection.Query().ToDocuments()
+            |> Seq.filter(fun doc -> 
+                let bsonValue = 
+                    ((doc :> BsonValue) ,propNames)
+                    ||> Seq.fold(fun doc propName ->
+                        doc.[propName]
+                    )
+                pred bsonValue
+             )   
+             |> Seq.map (Bson.deserialize<'t>)
+
+        /// Executes a full search using the Where query
+        member collection.FullSearch<'t, 'u> (propName: string, pred: BsonValue -> bool) =
+            collection.FullSearch<'t, 'u>(propName.Split '.', pred)
+
+        /// Executes a full search using the Where query
+        member collection.FullSearch<'t, 'u> (expr: Expr<'t -> 'u>, pred: BsonValue -> bool) =
+            match expr with 
+            | Lambda(_, NestedPropertyNamesGetter propNames) -> 
+                let propNames =
+                    match propNames with 
+                    | [ "Id" | "id" | "ID" ] -> ["_id"]
+                    | _ -> propNames
+
+                collection.FullSearch<'t, 'u>(propNames, pred) 
+            | _ ->  
                 let expression = sprintf "%A" expr
                 failwithf "Could not recognize the given expression \n%s\n, it should a simple lambda to select a property, for example: <@ fun record -> record.property @>" expression
 
+
+
+        /// Executes a full search using the Where query
+        member collection.fullSearch<'t, 'u> (expr: Expr<'t -> 'u>) (pred: 'u -> bool) =
+            collection.FullSearch<'t, 'u> (expr, (fun (bsonValue: BsonValue) ->
+                Bson.deserializeField bsonValue
+                |> pred
+            ))
+
+
         /// Creates a Query for a full search using a selector expression like `<@ fun record -> record.Name @>` and predicate
         member collection.where<'t, 'u> (expr: Expr<'t -> 'u>) (pred: 'u -> bool) =
-            match expr with
-                | Lambda(_, PropertyGet(_, propInfo, [])) ->
-                    let propName =
-                        match propInfo.Name with
-                        | ("Id" | "id" | "ID") -> "_id"
-                        | _ -> propInfo.Name
-
-                    Query.Where(propName, fun bsonValue ->
-                        bsonValue
-                        |> Bson.deserializeField<'u>
-                        |> pred)
-                | _ ->
-                    let expression = sprintf "%A" expr
-                    failwithf "Could not recognize the given expression \n%s\n, it should a simple lambda to select a property, for example: <@ fun record -> record.property @>" expression
+            collection.FullSearch<'t, 'u> (expr, (fun (bsonValue: BsonValue) ->
+                Bson.deserializeField bsonValue
+                |> pred
+            ))
 
         /// Remove all document based on quoted expression query. Returns removed document counts
         member collection.delete<'t> ([<ReflectedDefinition>] expr: Expr<'t -> bool>) =
             let query = Query.createQueryFromExpr expr
-            collection.Delete(query)
+            collection.DeleteMany(query)
 
     type LiteRepository with
         ///Create a new permanent index in all documents inside this collections if index not exists already.
@@ -111,28 +128,28 @@ module Extensions =
     [<RequireQualifiedAccess>]
     type LiteQueryable =
         ///Include DBRef field in result query execution
-        static member ``include`` (exp: Expression<Func<'a,'b>>) (query: LiteQueryable<'a>) =
+        static member ``include`` (exp: Expression<Func<'a,'b>>) (query: ILiteQueryable<'a>) =
             query.Include(exp)
 
        ///Include DBRef field in result query execution
-        static member expand (exp: Expression<Func<'a,'b>>) (query: LiteQueryable<'a>) =
+        static member expand (exp: Expression<Func<'a,'b>>) (query: ILiteQueryable<'a>) =
             query.Include(exp)
 
-        static member first (query: LiteQueryable<'a>) =
+        static member first (query: ILiteQueryable<'a>) =
             query.First()
 
-        static member toList (query: LiteQueryable<'a>) =
+        static member toList (query: ILiteQueryable<'a>) =
             query.ToEnumerable() |> List.ofSeq
 
         ///Add new Query filter when query will be executed. This filter use database index
-        static member where (exp: Expression<Func<'a,bool>>) (query: LiteQueryable<'a>) =
+        static member where (exp: Expression<Func<'a,bool>>) (query: ILiteQueryable<'a>) =
             query.Where exp
 
-        static member find (exp: Expression<Func<'a,bool>>) (query: LiteQueryable<'a>) =
+        static member find (exp: Expression<Func<'a,bool>>) (query: ILiteQueryable<'a>) =
             query |> LiteQueryable.where exp |> LiteQueryable.first
 
-        static member tryFirst (query: LiteQueryable<'a>) =
+        static member tryFirst (query: ILiteQueryable<'a>) =
             query.ToEnumerable() |> Seq.tryHead
 
-        static member tryFind (exp: Expression<Func<'a,bool>>) (query: LiteQueryable<'a>) =
+        static member tryFind (exp: Expression<Func<'a,bool>>) (query: ILiteQueryable<'a>) =
             query |> LiteQueryable.where exp |> LiteQueryable.tryFirst

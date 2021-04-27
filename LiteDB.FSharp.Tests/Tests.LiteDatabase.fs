@@ -79,6 +79,7 @@ let liteDatabaseUsage mapper =
                 let records = db.GetCollection<RecordWithSingleCaseId>("documents")
                 let record = { Id = SingleCaseDU 20; Value = "John" }
                 records.Insert(record) |> ignore
+
                 records.findOne (fun document -> document.Id = SingleCaseDU 20)
                 |> function
                     | { Id = SingleCaseDU 20; Value = "John" } -> pass()
@@ -553,8 +554,8 @@ let liteDatabaseUsage mapper =
                 values.Insert({ Id = 1; HasValue = true }) |> ignore
                 values.Insert({ Id = 2; HasValue = false }) |> ignore
 
-                let query = values.where <@ fun value -> value.HasValue @> id
-                values.Find(query)
+                let results = values.where <@ fun value -> value.HasValue @> id
+                results
                 |> Seq.length
                 |> function
                     | 1 -> pass()
@@ -566,8 +567,8 @@ let liteDatabaseUsage mapper =
                 values.Insert({ Id = 1; HasValue = true }) |> ignore
                 values.Insert({ Id = 2; HasValue = false }) |> ignore
 
-                let query = values.where <@ fun value -> value.Id @> (fun id -> id = 1 || id = 2)
-                values.Find(query)
+                let results = values.where <@ fun value -> value.Id @> (fun id -> id = 1 || id = 2)
+                results
                 |> Seq.length
                 |> function
                     | 2 -> pass()
@@ -620,15 +621,15 @@ let liteDatabaseUsage mapper =
                 let record = { Id = 1; Shape = shape }
 
                 records.Insert(record) |> ignore
-                let searchQuery =
-                    Query.Where("Shape", fun bsonValue ->
+                let results =
+                    records.FullSearch("Shape", fun bsonValue ->
                         let shapeValue = Bson.deserializeField<Shape> bsonValue
                         match shapeValue with
                         | Composite [ Circle 2.0; other ] -> true
                         | otherwise -> false
                     )
 
-                records.Find(searchQuery)
+                results
                 |> Seq.length
                 |> function
                     | 1 -> pass()

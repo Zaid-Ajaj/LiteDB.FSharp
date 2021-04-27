@@ -1,11 +1,9 @@
 namespace LiteDB.FSharp
 
 open System
-open System.Globalization
 
 open FSharp.Reflection
 open Newtonsoft.Json
-open LiteDB
 open LiteDB
 
 
@@ -13,20 +11,21 @@ open LiteDB
 [<RequireQualifiedAccess>]
 module Bson = 
     /// Returns the value of entry in the BsonDocument by it's key
-    let read key (doc: BsonDocument) =
+    let read (key: string) (doc: BsonDocument) =
+        
         doc.[key]
 
     /// Reads a property from a BsonDocument by it's key as a string
-    let readStr key (doc: BsonDocument) = 
+    let readStr (key: string) (doc: BsonDocument) = 
         doc.[key].AsString
 
     /// Reads a property from a BsonDocument by it's key and converts it to an integer
-    let readInt key (doc: BsonDocument) = 
-        doc.[key].AsString |> int
+    let readInt (key: string) (doc: BsonDocument) = 
+        doc.[key].AsInt32
 
     /// Reads a property from a BsonDocument by it's key and converts it to an integer
-    let readBool key (doc: BsonDocument) = 
-        doc.[key].AsString |> bool.Parse
+    let readBool (key: string) (doc: BsonDocument) = 
+        doc.[key].AsBoolean
 
     /// Adds an entry to a `BsonDocument` given a key and a BsonValue
     let withKeyValue key value (doc: BsonDocument) = 
@@ -35,19 +34,18 @@ module Bson =
 
     /// Reads a field from a BsonDocument as DateTime
     let readDate (key: string) (doc: BsonDocument) = 
-        let date = doc.[key].AsDateTime
-        if date.Kind = DateTimeKind.Local 
-        then date.ToUniversalTime() 
-        else date
+        doc.[key].AsDateTime
+
 
     /// Removes an entry (property) from a `BsonDocument` by the key of that property
-    let removeEntryByKey (key:string) (doc: BsonDocument) = 
+    let internal removeEntryByKey (key:string) (doc: BsonDocument) = 
         if (doc.ContainsKey key) 
         then doc.Remove(key) |> ignore
         doc
 
     let private fsharpJsonConverter = FSharpJsonConverter()
-    let mutable internal converters : JsonConverter[] = [| fsharpJsonConverter |]
+
+    let private converters : JsonConverter[] = [| fsharpJsonConverter |]
     
     /// Converts a typed entity (normally an F# record) to a BsonDocument. 
     /// Assuming there exists a field called `Id` or `id` of the record that will be mapped to `_id` in the BsonDocument, otherwise an exception is thrown.

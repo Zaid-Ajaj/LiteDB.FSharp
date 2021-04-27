@@ -4,124 +4,21 @@ open LiteDB
 open System.Globalization
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
-
-[<AutoOpen>]
-module ReflectionAdapters =
-    open System.Reflection
-
-    type System.Type with
-        member this.IsValueType = this.GetTypeInfo().IsValueType
-        member this.IsGenericType = this.GetTypeInfo().IsGenericType
-        member this.GetMethod(name) = this.GetTypeInfo().GetMethod(name)
-        member this.GetGenericArguments() = this.GetTypeInfo().GetGenericArguments()
-        member this.MakeGenericType(args) = this.GetTypeInfo().MakeGenericType(args)
-        member this.GetCustomAttributes(inherits : bool) : obj[] =
-            downcast box(CustomAttributeExtensions.GetCustomAttributes(this.GetTypeInfo(), inherits) |> Seq.toArray)
-
 open System
 open FSharp.Reflection
-open Newtonsoft.Json
-open Newtonsoft.Json.Converters
 open System.Reflection
 open System.Collections.Generic
 open System.Collections.Concurrent
-open System.Text.RegularExpressions
+open System.Runtime.CompilerServices
 
 
 
-type Kind =
-    | Other = 0
-    | Option = 1
-    | Tuple = 2
-    | Union = 3
-    | DateTime = 6
-    | MapOrDictWithNonStringKey = 7
-    | Long = 8
-    | BigInt = 9
-    | Guid = 10
-    | Decimal = 11
-    | Binary = 12
-    | ObjectId = 13
-    | Double = 14
-    | Record = 15
-
-/// Helper for serializing map/dict with non-primitive, non-string keys such as unions and records.
-/// Performs additional serialization/deserialization of the key object and uses the resulting JSON
-/// representation of the key object as the string key in the serialized map/dict.
-type MapSerializer<'k,'v when 'k : comparison>() =
-    static member Deserialize(t:Type, reader:JsonReader, serializer:JsonSerializer) =
-        let dictionary =
-            serializer.Deserialize<Dictionary<string,'v>>(reader)
-                |> Seq.fold (fun (dict:Dictionary<'k,'v>) kvp ->
-                    use tempReader = new System.IO.StringReader(kvp.Key)
-                    let key = serializer.Deserialize(tempReader, typeof<'k>) :?> 'k
-                    dict.Add(key, kvp.Value)
-                    dict
-                    ) (Dictionary<'k,'v>())
-        if t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Map<_,_>>
-        then dictionary |> Seq.map (|KeyValue|) |> Map.ofSeq :> obj
-        elif t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Dictionary<_,_>>
-        then dictionary :> obj
-        else failwith "MapSerializer input type wasn't a Map or a Dictionary"
-    static member Serialize(value: obj, writer:JsonWriter, serializer:JsonSerializer) =
-        let kvpSeq =
-            match value with
-            | :? Map<'k,'v> as mapObj -> mapObj |> Map.toSeq
-            | :? Dictionary<'k,'v> as dictObj -> dictObj |> Seq.map (|KeyValue|)
-            | _ -> failwith "MapSerializer input value wasn't a Map or a Dictionary"
-        writer.WriteStartObject()
-        use tempWriter = new System.IO.StringWriter()
-        kvpSeq
-            |> Seq.iter (fun (k,v) ->
-                let key =
-                    tempWriter.GetStringBuilder().Clear() |> ignore
-                    serializer.Serialize(tempWriter, k)
-                    tempWriter.ToString()
-                writer.WritePropertyName(key)
-                serializer.Serialize(writer, v) )
-        writer.WriteEndObject()
+[<assembly: InternalsVisibleTo("LiteDB.FSharp.Tests")>]
+do()
 
 [<RequireQualifiedAccess>]
-type private ConvertableUnionType =
-    | SinglePrivate of UnionCaseInfo
-    | Public of UnionCaseInfo []
-
-
-module private Cache =
-
-    let jsonConverterTypes = ConcurrentDictionary<Type,Kind>()
-    let serializationBinderTypes = ConcurrentDictionary<string,Type>()
-    let inheritedConverterTypes = ConcurrentDictionary<string,HashSet<Type>>()
-    let inheritedTypeQuickAccessor = ConcurrentDictionary<string * list<string>,Type>()
-
-    let private convertableUnionTypes = ConcurrentDictionary<Type, ConvertableUnionType option>()
-
-    let (|ConvertableUnionType|_|) (t: Type) =
-        convertableUnionTypes.GetOrAdd(t, (fun _ ->
-            if FSharpType.IsUnion (t)
-            then Some (ConvertableUnionType.Public (FSharpType.GetUnionCases t))
-            elif FSharpType.IsUnion(t, true)
-            then
-                let ucies = FSharpType.GetUnionCases(t, true)
-                match ucies.Length with
-                | 0 -> None
-                | 1 -> Some (ConvertableUnionType.SinglePrivate ucies.[0])
-                | i when i > 1 -> None
-                | _ -> failwith "Invalid token"
-            else None
-        ))
-
-    let isConvertableUnionType t =
-        match t with
-        | ConvertableUnionType _ -> true
-        | _ -> false
-
-open Cache
-open System
-
-[<RequireQualifiedAccess>]
-module DefaultValue =
-    type DefaultGen<'t>() =
+module internal DefaultValue = 
+    type DefaultGen<'t>() = 
         member this.GetDefault() =
             let typeSignature = typeof<'t>.FullName
             if typeSignature = typeof<int>.FullName
@@ -148,34 +45,80 @@ module DefaultValue =
     let fromType (inputType: System.Type) : obj =
         let genericDefaultGenType = typedefof<DefaultGen<_>>.MakeGenericType(inputType)
         let defaultGenerator = Activator.CreateInstance(genericDefaultGenType)
-        let getDefaultMethod = genericDefaultGenType.GetMethods() |> Seq.filter (fun meth -> meth.Name = "GetDefault") |> Seq.head
+        let getDefaultMethod = genericDefaultGenType.GetMethods(BindingFlags.NonPublic ||| BindingFlags.Instance ) |> Seq.filter (fun meth -> meth.Name = "GetDefault") |> Seq.head
         getDefaultMethod.Invoke(defaultGenerator, [||])
 
-/// Converts F# options, tuples and unions to a format understandable
-/// A derivative of Fable's JsonConverter. Code adapted from Lev Gorodinski's original.
-/// See https://goo.gl/F6YiQk
-type FSharpJsonConverter() =
-    inherit Newtonsoft.Json.JsonConverter()
 
-    let advance(reader: JsonReader) =
-        reader.Read() |> ignore
 
-    let readElements(reader: JsonReader, itemTypes: Type[], serializer: JsonSerializer) =
-        let rec read index acc =
-            match reader.TokenType with
-            | JsonToken.EndArray -> acc
-            | _ ->
-                let value = serializer.Deserialize(reader, itemTypes.[index])
-                advance reader
-                read (index + 1) (acc @ [value])
-        advance reader
-        read 0 List.empty
+[<AutoOpen>]
+module private _JsonUtils =
 
-    let isRegisteredParentType (tp: Type) =
-        inheritedConverterTypes.ContainsKey(tp.FullName)
+    [<RequireQualifiedAccess>]
+    type ConvertableUnionType =
+        | SinglePrivate of UnionCaseInfo
+        | Public of UnionCaseInfo []
 
-    override x.CanConvert(t) =
-        let kind =
+    [<AutoOpen>]
+    module ReflectionAdapters =
+
+        type System.Type with
+            member this.IsValueType = this.GetTypeInfo().IsValueType
+            member this.IsGenericType = this.GetTypeInfo().IsGenericType
+            member this.GetMethod(name) = this.GetTypeInfo().GetMethod(name)
+            member this.GetGenericArguments() = this.GetTypeInfo().GetGenericArguments()
+            member this.MakeGenericType(args) = this.GetTypeInfo().MakeGenericType(args)
+            member this.GetCustomAttributes(inherits : bool) : obj[] =
+                downcast box(CustomAttributeExtensions.GetCustomAttributes(this.GetTypeInfo(), inherits) |> Seq.toArray)
+
+
+
+    type Kind =
+        | Other = 0
+        | Option = 1
+        | Tuple = 2
+        | Union = 3
+        | DateTime = 6
+        | MapOrDictWithNonStringKey = 7
+        | Long = 8
+        | BigInt = 9
+        | Guid = 10
+        | Decimal = 11
+        | Binary = 12
+        | ObjectId = 13
+        | Double = 14
+        | Record = 15
+        | Enum = 16
+
+    module Cache =
+
+        let jsonConverterTypes = ConcurrentDictionary<Type,Kind>()
+        let serializationBinderTypes = ConcurrentDictionary<string,Type>()
+        let inheritedConverterTypes = ConcurrentDictionary<string,HashSet<Type>>()
+        let inheritedTypeQuickAccessor = ConcurrentDictionary<string * list<string>,Type>()
+
+        let private convertableUnionTypes = ConcurrentDictionary<Type, ConvertableUnionType option>()
+
+        let (|ConvertableUnionType|_|) (t: Type) =
+            convertableUnionTypes.GetOrAdd(t, (fun _ ->
+                if FSharpType.IsUnion (t) 
+                then Some (ConvertableUnionType.Public (FSharpType.GetUnionCases t))
+                elif FSharpType.IsUnion(t, true)
+                then
+                    let ucies = FSharpType.GetUnionCases(t, true)
+                    match ucies.Length with 
+                    | 0 -> None
+                    | 1 -> Some (ConvertableUnionType.SinglePrivate ucies.[0])
+                    | i when i > 1 -> None
+                    | _ -> failwith "Invalid token"
+                else None
+            ))
+
+        let isConvertableUnionType t =
+            match t with 
+            | ConvertableUnionType _ -> true
+            | _ -> false
+
+        let getOrAddTypeKind (t: Type) =
             jsonConverterTypes.GetOrAdd(t, fun t ->
                 if t.FullName = "System.DateTime"
                 then Kind.DateTime
@@ -204,11 +147,89 @@ type FSharpJsonConverter() =
                     && t.GetGenericArguments().[0] <> typeof<string>
                 then
                     Kind.MapOrDictWithNonStringKey
+                elif t.IsEnum 
+                then Kind.Enum
                 else Kind.Other)
 
-        match kind with
+    /// Helper for serializing map/dict with non-primitive, non-string keys such as unions and records.
+    /// Performs additional serialization/deserialization of the key object and uses the resulting JSON
+    /// representation of the key object as the string key in the serialized map/dict.
+    type MapSerializer<'k,'v when 'k : comparison>() =
+        static member Deserialize(t:Type, reader:JsonReader, serializer:JsonSerializer) =
+            let dictionary =
+                serializer.Deserialize<Dictionary<string,'v>>(reader)
+                    |> Seq.fold (fun (dict:Dictionary<'k,'v>) kvp ->
+                        use tempReader = new System.IO.StringReader(kvp.Key)
+                        let key = serializer.Deserialize(tempReader, typeof<'k>) :?> 'k
+                        dict.Add(key, kvp.Value)
+                        dict
+                        ) (Dictionary<'k,'v>())
+            if t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Map<_,_>>
+            then dictionary |> Seq.map (|KeyValue|) |> Map.ofSeq :> obj
+            elif t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Dictionary<_,_>>
+            then dictionary :> obj
+            else failwith "MapSerializer input type wasn't a Map or a Dictionary"
+        static member Serialize(value: obj, writer:JsonWriter, serializer:JsonSerializer) =
+            let kvpSeq =
+                match value with
+                | :? Map<'k,'v> as mapObj -> mapObj |> Map.toSeq
+                | :? Dictionary<'k,'v> as dictObj -> dictObj |> Seq.map (|KeyValue|)
+                | _ -> failwith "MapSerializer input value wasn't a Map or a Dictionary"
+            writer.WriteStartObject()
+            use tempWriter = new System.IO.StringWriter()
+            kvpSeq
+                |> Seq.iter (fun (k,v) ->
+                    let key =
+                        tempWriter.GetStringBuilder().Clear() |> ignore
+                        serializer.Serialize(tempWriter, k)
+                        tempWriter.ToString()
+                    writer.WritePropertyName(key)
+                    serializer.Serialize(writer, v) )
+            writer.WriteEndObject()
+
+
+
+open Cache
+open System
+
+
+
+open Cache
+
+/// Converts F# options, tuples and unions to a format understandable
+/// A derivative of Fable's JsonConverter. Code adapted from Lev Gorodinski's original.
+/// See https://goo.gl/F6YiQk
+type FSharpJsonConverter() =
+    inherit Newtonsoft.Json.JsonConverter()
+
+    let advance(reader: JsonReader) =
+        reader.Read() |> ignore
+
+    let readElements(reader: JsonReader, itemTypes: Type[], serializer: JsonSerializer) =
+        let rec read index acc =
+            match reader.TokenType with
+            | JsonToken.EndArray -> acc
+            | _ ->
+                let value = serializer.Deserialize(reader, itemTypes.[index])
+                advance reader
+                read (index + 1) (acc @ [value])
+        advance reader
+        read 0 List.empty
+
+
+
+
+    let isRegisteredParentType (tp: Type) =
+        inheritedConverterTypes.ContainsKey(tp.FullName)
+
+    override x.CanConvert(t) =
+        let kind = getOrAddTypeKind t
+        
+        match kind with 
         | Kind.Other -> isRegisteredParentType t
+        | Kind.Enum -> false
         | _ -> true
+        
 
     override x.WriteJson(writer, value, serializer) =
         if isNull value
@@ -238,6 +259,11 @@ type FSharpJsonConverter() =
                 oid.WriteTo(writer)
             | true, Kind.DateTime ->
                 let dt = value :?> DateTime
+                let universalTime = 
+                    match dt.Kind with 
+                    | DateTimeKind.Local
+                    | DateTimeKind.Unspecified -> dt.ToUniversalTime()
+                    | _ -> dt
                 let dateTime = JObject()
                 dateTime.Add(JProperty("$date", dt.ToString("O", CultureInfo.InvariantCulture)))
                 dateTime.WriteTo(writer)
@@ -260,22 +286,22 @@ type FSharpJsonConverter() =
                 serializer.Serialize(writer, values)
             | true, Kind.Union ->
                 let uciName, fields =
-                    match t with
+                    match t with 
                     | ConvertableUnionType convertableUnionType ->
-                        match convertableUnionType with
-                        | ConvertableUnionType.SinglePrivate uci ->
+                        match convertableUnionType with 
+                        | ConvertableUnionType.SinglePrivate uci -> 
                             /// make uciName to 'case' as anonymous property name
                             /// so private case union is still querable after Case Name is changed
                             "case", snd (FSharpValue.GetUnionFields(value, t, true))
 
-                        | ConvertableUnionType.Public _ ->
+                        | ConvertableUnionType.Public _ -> 
                             let uci, fields = FSharpValue.GetUnionFields(value, t)
                             uci.Name, fields
                     | _ -> failwithf "%s is not an convertable union type" t.FullName
 
                 if fields.Length = 0
                 then serializer.Serialize(writer, uciName)
-
+                        
                 else
                     writer.WriteStartObject()
                     writer.WritePropertyName(uciName)
@@ -297,8 +323,8 @@ type FSharpJsonConverter() =
                     writer.WritePropertyName(fieldType.Name)
                     serializer.Serialize(writer, fieldValue)
                 writer.WriteEndObject()
-
-            | true, _ ->
+            
+            | true, _ ->                
                 serializer.Serialize(writer, value)
 
     override x.ReadJson(reader, t, existingValue, serializer) =
@@ -331,9 +357,8 @@ type FSharpJsonConverter() =
             upcast Double.Parse(value)
         | true, Kind.DateTime ->
             let jsonObject = JObject.Load(reader)
-            let dateValue = jsonObject.["$date"].Value<string>()
-            let date = DateTime.Parse(dateValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
-            upcast date
+            upcast jsonObject.["$date"].Value<DateTime>().ToLocalTime()
+
         | true, Kind.Option ->
             let innerType = t.GetGenericArguments().[0]
             let innerType =
@@ -342,9 +367,9 @@ type FSharpJsonConverter() =
                 else innerType
 
             let cases = FSharpType.GetUnionCases(t)
-
-            let value =
-                match reader.TokenType with
+        
+            let value = 
+                match reader.TokenType with 
                 | JsonToken.StartObject ->
                     let jObject = JObject.Load(reader)
                     let path = jObject.First.Path
@@ -369,37 +394,37 @@ type FSharpJsonConverter() =
             match reader.TokenType with
             | JsonToken.String ->
                 let uci =
-                    match t with
+                    match t with 
                     | ConvertableUnionType convertableType ->
-                        match convertableType with
+                        match convertableType with 
                         | ConvertableUnionType.Public ucis ->
                             let name = serializer.Deserialize(reader, typeof<string>) :?> string
                             ucis
                             |> Array.find(fun m -> m.Name = name)
 
                         | ConvertableUnionType.SinglePrivate uci -> uci
-                    | _ ->
+                    | _ -> 
                         failwithf "%s is not an convertable union type" t.FullName
-
+                        
 
                 FSharpValue.MakeUnion(uci, [||], true)
 
             | JsonToken.StartObject ->
                 advance reader
                 let uci =
-                    match t with
+                    match t with 
                     | ConvertableUnionType convertableType ->
-                        match convertableType with
+                        match convertableType with 
                         | ConvertableUnionType.Public ucis ->
                             let name = reader.Value :?> string
                             ucis
                             |> Array.find(fun m -> m.Name = name)
 
                         | ConvertableUnionType.SinglePrivate uci -> uci
-                    | _ ->
+                    | _ -> 
                         failwithf "%s is not an convertable union type" t.FullName
-
-
+                        
+                
                 advance reader
 
                 let itemTypes = uci.GetFields() |> Array.map (fun pi -> pi.PropertyType)
@@ -450,14 +475,14 @@ type FSharpJsonConverter() =
                 let recordField = recordFields.[index]
                 let fieldType = recordField.PropertyType
                 let fieldName = recordField.Name
-                match recordJson.TryGetValue fieldName with
-                | true, fieldValueJson ->
+                match recordJson.TryGetValue fieldName with 
+                | true, fieldValueJson -> 
                     fieldValueJson.ToObject(fieldType, serializer)
-
+                    
                 | false, _ -> DefaultValue.fromType fieldType
-
+        
             FSharpValue.MakeRecord(t, recordValues)
-
+        
         | true, _ ->
             serializer.Deserialize(reader, t)
 
