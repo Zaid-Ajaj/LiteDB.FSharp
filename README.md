@@ -97,22 +97,21 @@ let filtered =
         (fun dateReleased -> dateReleased.Year % 5 = 0)
 ```
 
-### Customized Full Search using Query.Where
-The function `Query.Where` expects a field name and a filter function of type `BsonValue -> bool`. You can deserialize the `BsonValue` using `Bson.deserializeField<'t>` where `'t` is the type of the serialized value. 
+### Customized Full Search using Collection.FullSearch
+The function `Collection.FullSearch` expects a field name and a filter function of type `BsonValue -> bool`. You can deserialize the `BsonValue` using `Bson.deserializeField<'t>` where `'t` is the type of the serialized value. 
 
 ```fsharp
 // Filtering albums released a year divisble by 5
-let searchQuery = 
-    Query.Where("DateReleased", fun bsonValue ->
+let searchResult = 
+    Collection.FullSearch("DateReleased", fun bsonValue ->
         // dateReleased : DateTime
         let dateReleased = Bson.deserializeField<DateTime> bsonValue
         let year = dateReleased.Year
         year % 5 = 0
     )
 
-let searchResult = albums.Find(searchQuery)
 ```
-### Query.Where: Filtering documents by matching with values of a nested DU
+### Collection.FullSearch: Filtering documents by matching with values of a nested DU
 ```fsharp
 type Shape = 
     | Circle of float
@@ -132,14 +131,14 @@ let shape =
 let record = { Id = 1; Shape = shape }
 records.Insert(record) |> ignore
 
-let searchQuery = 
-    Query.Where("Shape", fun bsonValue -> 
+let results = 
+    Collection.FullSearch("Shape", fun bsonValue -> 
         let shapeValue = Bson.deserializeField<Shape> bsonValue
         match shapeValue with
         | Composite [ Circle 2.0; other ] -> true
         | otherwise -> false
     )
-records.Find(searchQuery)
+results
 |> Seq.length
 |> function 
     | 1 -> pass() // passed!

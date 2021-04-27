@@ -5,7 +5,6 @@ open System.IO
 open LiteDB
 open LiteDB.FSharp
 open Tests.Types
-open LiteDB.FSharp.Linq
 open LiteDB.FSharp.Extensions
 open LiteDB.FSharp.Experimental
 

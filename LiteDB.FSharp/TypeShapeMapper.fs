@@ -5,6 +5,7 @@ namespace LiteDB.FSharp
    open TypeShape.Core
    open TypeShape.Core.Utils
    open LiteDB.FSharp
+
    type Convert<'t> = { To : 't -> BsonValue; From : BsonValue -> 't }
 
    [<AutoOpen>]

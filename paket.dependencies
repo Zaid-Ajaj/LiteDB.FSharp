@@ -1,0 +1,8 @@
+source https://api.nuget.org/v3/index.json
+
+storage:none
+nuget Expecto
+nuget FSharp.Core 
+nuget LiteDB
+nuget Newtonsoft.JSON
+nuget TypeShape
