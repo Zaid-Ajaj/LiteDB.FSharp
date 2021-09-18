@@ -44,6 +44,7 @@ type Kind =
     | ObjectId = 13
     | Double = 14
     | Record = 15
+    | NullableDateTime = 16
 
 /// Helper for serializing map/dict with non-primitive, non-string keys such as unions and records.
 /// Performs additional serialization/deserialization of the key object and uses the resulting JSON
@@ -204,6 +205,8 @@ type FSharpJsonConverter() =
                     && t.GetGenericArguments().[0] <> typeof<string>
                 then
                     Kind.MapOrDictWithNonStringKey
+                elif t = typeof<Nullable<DateTime>>
+                then Kind.NullableDateTime
                 else Kind.Other)
 
         match kind with
@@ -297,7 +300,8 @@ type FSharpJsonConverter() =
                     writer.WritePropertyName(fieldType.Name)
                     serializer.Serialize(writer, fieldValue)
                 writer.WriteEndObject()
-
+            | true, Kind.NullableDateTime ->
+                serializer.Serialize(writer, value)
             | true, _ ->
                 serializer.Serialize(writer, value)
 
@@ -457,6 +461,15 @@ type FSharpJsonConverter() =
                 | false, _ -> DefaultValue.fromType fieldType
 
             FSharpValue.MakeRecord(t, recordValues)
+        | true, Kind.NullableDateTime ->
+            match reader.TokenType with
+            | JsonToken.Null ->
+                null
+            | _ ->
+                let jsonObject = JObject.Load(reader)
+                let dateValue = jsonObject.["$date"].Value<string>()
+                let date = DateTime.Parse(dateValue, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+                upcast date
 
         | true, _ ->
             serializer.Deserialize(reader, t)
