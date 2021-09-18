@@ -1,5 +1,6 @@
 ﻿module Runner
 
+open System
 open Expecto
 open Expecto.Logging
 open LiteDB.FSharp
@@ -27,6 +28,10 @@ let defaultValueTests =
         testCase "Default of string is an empty string" <| fun _ ->
             let value = DefaultValue.fromType (typeof<string>) |> unbox<string>
             Expect.equal "" value "An empty string is the default string"
+            
+        testCase "Works with Nullable DateTimes" <| fun _ ->
+            let value = DefaultValue.fromType (typeof<Nullable<DateTime>>) |> unbox<Nullable<DateTime>>
+            Expect.equal (Nullable()) value ""
     ]
 
 let liteDbTests mapper name =

@@ -47,6 +47,11 @@ type RecOptGuid = {
     OtherId: Option<Guid>
 }
 
+type RecNullableDateTime = {
+    Id: int
+    Date: Nullable<DateTime>
+}
+
 let pass() = Expect.isTrue true "passed"
 let fail() = Expect.isTrue false "failed"
 
@@ -658,4 +663,32 @@ let liteDatabaseUsage mapper =
                 |> function
                     | 1 -> pass()
                     | n -> fail()
+                    
+        testCase "Documents with Nullable DateTime != null can be used" <| fun _ ->
+            useDatabase mapper<| fun db ->
+                let docs = db.GetCollection<RecNullableDateTime>()
+                let date = Nullable DateTime.MinValue
+                docs.Insert ({ Id = 1; Date = date }) |> ignore
+                docs.FindAll()
+                |> Seq.tryHead
+                |> function
+                    | None -> fail()
+                    | Some doc ->
+                        match doc.Id, doc.Date with
+                        | 1, date -> pass()
+                        | _ -> fail()
+                        
+        testCase "Documents with Nullable DateTime = null can be used" <| fun _ ->
+            useDatabase mapper<| fun db ->
+                let docs = db.GetCollection<RecNullableDateTime>()
+                let date = Nullable()
+                docs.Insert ({ Id = 1; Date = date }) |> ignore
+                docs.FindAll()
+                |> Seq.tryHead
+                |> function
+                    | None -> fail()
+                    | Some doc ->
+                        match doc.Id, doc.Date with
+                        | 1, date -> pass()
+                        | _ -> fail()
     ]
